@@ -22,27 +22,12 @@
 #define EN_C0 (0xC0u)
 #define DATH_MIN (0x00u)
 #define DATL_MIN (0x00u)
+#define SIM (0x40047000u)
+#define SCGC6 (0x103Cu)
 /*								  Code								*/
 
 /*							Initializations					*/
 
-void initDAC0()
-{
-  /* Enable TPM0 module clock */
-  SIM->SCGC6 |= EN_DAC;
-  /* Enable port E module clock */
-  SIM->SCGC5 |= EN_PTE;
-  /* Connect DAC0_OUT to Port E Pin 30 (J4 Pin 11) */
-  PORTE->PCR[30] = DAC0_OUT;
-  /* Set DAC0 DMA disabled and buffer disabled */
-  DAC0->C1 = BUF_DISABLE;
-  /* Set DAC0 enabled with VDDA as reference voltage */
-  /* and read pointer interrupts disabled            */
-  DAC0->C0 = EN_C0;
-  /* Set DAC0 output voltage at minimum value */
-  DAC0->DAT[0].DATL = DATH_MIN;
-  DAC0->DAT[0].DATH = DATL_MIN;
-}
 
 /*Main code; runs on startup*/
 int main(void)
@@ -53,7 +38,7 @@ int main(void)
 
 	initGPIOLightDataOut();
 	initPITInterrupt();
-	initADC();
+	initDAC0();
 
 	__asm("CPSIE	I");
 

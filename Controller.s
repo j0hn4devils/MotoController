@@ -30,7 +30,8 @@ EN_PTE		EQU	0x00001000	;Mask to enable PORT E in SCGC5
 
 ;						SCGC6
 SIM_SCGC6	EQU	0x4004803C	;Absolute Address of SCGC6 Module
-EN_PIT		EQU	0x00800000	;Mask to enable PIT in SCGC6
+EN_PIT		EQU	0x00800000	;Mask to enable PIT
+EN_DAC		EQU	0x80000000	;Mask to enable DAC0
 
 ;						 PIT
 PIT_BASE	EQU	0x40037000	;Base for PIT
@@ -50,9 +51,30 @@ PIT_IPR		EQU (NVIC + 0x314) 		;IPR5 offset
 PIT_IRQ_PRI	EQU	(0 << PIT_PRI_POS)	;Set PIT Priority to 0 (highest)
 	
 ;						DAC/ADC
-LOW_VOLTAGE	EQU	0		;Write to DAC for 0V out
-HIGH_VOLTAGE EQU 4095	;Write to DAC for 3.3V out
-
+DAC0_BASE	EQU	0x4003F000			;DAC0 Base
+DAT0L		EQU	DAC0_BASE			
+DAT0H		EQU	(DAC0_BASE + 0x01)	
+DAC0_SR		EQU	(DAC0_BASE + 0x20)	
+DAC0_C0		EQU	(DAC0_BASE + 0x21)	
+DAC0_C1		EQU	(DAC0_BASE + 0x22)
+DAC0_C2		EQU	(DAC0_BASE + 0x23)
+C1_DMA_DISABLE EQU	0x00			;Mask to diable DMA/buffer
+C0_DACEN_VDDREF_HP	EQU	0xC0		;Enables DAC, uses VDD as refernce
+									;voltage, and High power mode is enabled
+DATHL_LOW	EQU 0x00	;Low voltage for DATH/L
+DATH_HIGH	EQU 0x0E	;High voltage for DATH
+DATL_HIGH	EQU	0xFF	;High voltage for DATL
+	
+;						PORTE
+PORTE_BASE	EQU 0x4004D000			;Base for port E
+PCR_30_OFFSET	EQU	0x78			;Offset for PCR30
+PTE_PCR0	EQU	PORTE_BASE			;PCR 0 located at base
+PTE_PCR30	EQU (PORTE_BASE + PCR_30_OFFSET);PCR 30
+ISF_MASK	EQU 0x01000000			;Mask to clear ISF (w1c)
+ANALOG_OUT	EQU 0x00000000			;Mask to multiplex analog output
+ANALOG_MASK	EQU (ISF_MASK :OR: ANALOG_OUT)	;Mask to fully enable analog out
+GPIO_OUT	EQU 0x00000100			;Mask to muliplex GPIO Output
+GPIO_MASK	EQU	(ISF_MASK :OR: GPIO_OUT)	;Mask to fully enable GPIO out
 ;-----------------------------------------------------
 ; 					Define Program
 
@@ -74,13 +96,70 @@ initGPIOLightDataOut
 		;Regmod: None
 
 		PUSH	{R0-R2,LR}			;Save registers
+		
 		;Enable clock for Port E
 		LDR		R0,=SIM_SCGC5		;Load SCGC5 address
 		LDR		R1,=EN_PTE			;Load PortE mask
 		LDR		R2,[R0,#0]			;Load current SCGC5 value
 		ORRS	R2,R2,R1			;Mask SCGC5
 		STR		R2,[R0,#0]			;Store new SCGC5 value
+		
+		;Port control register for pin 0
+		LDR		R0,=PTE_PCR0		;Load PCR0
+		LDR		R7,[R0,#0]			;debug
+		LDR		R1,=GPIO_MASK		;Load ISF Mask
+		STR		R1,[R0,#0]			;Store mask
 		POP		{R0-R2,PC}			;Restore and return
+
+		EXPORT initDAC0
+initDAC0
+		;Initailizes the DAC 0 for output to PTE PIN30
+		;Input: None
+		;Output: Initailized DAC (.81mV)
+		;Regmod: None
+		
+		PUSH	{R0-R2};			;Save registers
+		
+		;SCGC6 initailization
+		LDR		R0,=SIM_SCGC6		;Load SCGC6 base
+		LDR		R1,=EN_DAC			;Load mask
+		LDR		R2,[R0,#0]			;Load SCGC6's current value
+		ORRS	R2,R2,R1			;Or in the mask
+		STR		R2,[R0,#0]			;Store orred mask in SCGC6
+		
+		;SCGC5 initialization
+		LDR		R0,=SIM_SCGC5		;Load SCGC5 address
+		LDR		R1,=EN_PTE			;Load PortE mask
+		LDR		R2,[R0,#0]			;Load current SCGC5 value
+		ORRS	R2,R2,R1			;Mask SCGC5
+		STR		R2,[R0,#0]			;Store new SCGC5 value
+		
+		;Map output to pin 30
+		LDR		R0,=PTE_PCR30		;Load PCR 30
+		LDR		R1,=ANALOG_MASK		;Load mask
+		STR		R1,[R0,#0]			;Store mask
+		
+		;Init C1
+		LDR		R0,=DAC0_C1			;Load C1
+		MOVS	R1,#C1_DMA_DISABLE	;Load mask
+		STRB	R1,[R0,#0]			;Store mask
+		
+		;C2 needs no initialization
+		
+		;Init C0
+		LDR		R0,=DAC0_C0				;Load C0
+		MOVS	R1,#C0_DACEN_VDDREF_HP	;Load mask
+		STRB	R1,[R0,#0]				;Store mask
+		
+		;Initalize to low voltage
+		LDR		R0,=DAT0L			;Load DAT0L
+		MOVS	R1,#DATHL_LOW		;Load mask for DAT0L or DAT0H
+		STRB	R1,[R0,#0]			;Store mask at DAT0L
+		STRB	R1,[R0,#1]			;Store mask at DAT0H
+		
+		POP		{R0-R2}				;Restore and return
+		BX		LR
+
 
 changeClock
 		;Sets analog output to either 1 or 0
@@ -96,17 +175,20 @@ changeClock
 		LDR		R1,[R0,#0]		;Get High/Low Value
 		CMP		R1,#0			;Compare to 0 (low)
 		BEQ		Low				;If 0, change Voltage from low to high
-High	LDR		R1,=LOW_VOLTAGE	;Load low voltage value
-
-		;Store low voltage value
-		STR		R1,[R0,#0]		;Store new clock value at =Clock
+High	LDR		R1,=DAT0L		;Load DAT0L
+		MOVS	R2,#DATHL_LOW	;Load Low voltage mask
+		STRB	R2,[R1,#1]		;Store at DATH
+		STRB	R2,[R1,#0]		;Store at DATL
+		STR		R2,[R0,#0]		;Store new "bool" value at =Clock
 		POP		{R0-R2}			;Restore and return
 		BX		LR
 
-Low		LDR		R1,=HIGH_VOLTAGE ;Load R1 with high voltage value
-
-		;Store high voltage value
-		STR		R1,[R0,#0]		;Store new clock value at =Clock
+Low		LDR		R1,=DAT0L 		;Load DAT0L
+		MOVS	R2,#DATL_HIGH	;Load high voltage mask for DATL
+		STRB	R2,[R1,#0]		;Store mask at DATL
+		MOVS	R2,#DATH_HIGH	;Load high voltage mask for DATH
+		STRB	R2,[R1,#1]		;Store mask at DATH
+		STR		R2,[R0,#0]		;Store new "bool" value at =Clock
 		POP		{R0-R2}			;Restore and return
 		BX		LR
 
@@ -192,6 +274,8 @@ endPIT_ISR
 			STR     R1,[R0,#TFLG1]		;Store at offset
             POP     {PC}
 
+
+			ALIGN
 ;------------------------------------------------------
 ;					Variables
 
