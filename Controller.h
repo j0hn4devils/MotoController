@@ -1,7 +1,7 @@
 /*Header for Controller.c*/
 /*Allows access toi ASM Libraries*/
 /*Written by: John DeBrino*/
-/*Revision Date: mm/dd/yyyy*/
+/*Revision Date: 12/26/2016*/
 
 /*						typedef						*/
 typedef int Int32;
@@ -14,5 +14,7 @@ typedef unsigned int UInt32;
 extern void initGPIOLightDataOut(void);
 extern void initPITInterrupt(void);
 extern void initSPI(void);
+
+
 /*					Lighting.s					*/
 extern void setColor(int Color);

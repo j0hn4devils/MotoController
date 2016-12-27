@@ -3,7 +3,7 @@
 ;Initialize background tasks (UART,TPM,etc)
 ;Written by John DeBrino
 ;Sources referrenced: Roy Melton (CMPE-250 Professor)
-;Revision Date: mm/dd/yyyy
+;Revision Date: 12/26/2016
 ;-----------------------------------------------------
 ;		  Assembler Directives and Includes
 
@@ -114,30 +114,38 @@ EN_FIFO		EQU	0x01		;Enables 64 bit FIFO
 		EXPORT initSPI
 initSPI
 		;Inits SPI for data transmission, 8 bit mode
-		;comment here
+		;The purpose for the SPI is to drive an LED Strip
+		;Input: None
+		;Output: SPI Initialized; ready for data transmission
+		;Regmod: None
 		
-		PUSH	{R0-R1}
+		;Save Registers
+		PUSH	{R0-R2}			;No LR; Faster implementation
+		
 		;Enable module in SCGC4
-		LDR		R0,=SIM_SCGC4
-		LDR		R1,=SPI0_MASK
-		LDR		R2,[R0,#0]
-		ORRS	R2,R2,R1
-		STR		R2,[R0,#0]
+		LDR		R0,=SIM_SCGC4	;Load SCGC4 address
+		LDR		R1,=SPI0_MASK	;Load mask to enable clock
+		LDR		R2,[R0,#0]		;Load current SCGC4 value (don't disable other modules)
+		ORRS	R2,R2,R1		;Or in the mask to enable SPI0
+		STR		R2,[R0,#0]		;Store new value at SCGC4
 		
-		LDR		R0,=SPI_BAUD
-		MOVS	R1,#BAUD_MASK
-		STRB	R1,[R0,#0]
+		;Set the BAUD rate
+		LDR		R0,=SPI_BAUD	;Load the BAUD rate register
+		MOVS	R1,#BAUD_MASK	;Load the mask for desired BAUD rate
+		STRB	R1,[R0,#0]		;Store the new baud rate
 		
+		;Control register 1 initalizations
 		LDR		R0,=SPI_C1		;Load C1 address
-		MOVS	R1,#C1_EN_MSTR	;Load mask
-		STRB	R1,[R0,#0]		;Store mask
+		MOVS	R1,#C1_EN_MSTR	;Load mask to enable SPI0 as a master device
+		STRB	R1,[R0,#0]		;Store mask at C1
 		
-		LDR		R0,=SPI_C2		;Load C2
-		MOVS	R1,#C2_8BIT		;Load mask
-		STRB	R1,[R0,#0]		;Store mask
+		;Control register 2 initializations
+		LDR		R0,=SPI_C2		;Load C2 address
+		MOVS	R1,#C2_8BIT		;Load mask to ensure 8 bit operation
+		STRB	R1,[R0,#0]		;Store mask at C2
 
-		
-		POP		{R0-R1}
+		;Restore and return
+		POP		{R0-R2}			
 		BX		LR
 		
 		 
@@ -187,9 +195,9 @@ initPITInterrupt
 		STR		R1,[R0,#0]		;Store
 
 		;CH0 Interrupt condition
-		LDR 	R0,=PIT_LDVAL0		;Load LDVAL0, which is the CH0 Base
-		LDR		R1,=TFLG_CLR		;Load mask to reset interrupt condition
-		STR		R1,[R0,#TFLG1]		;Store mask at offset
+		LDR 	R0,=PIT_LDVAL0	;Load LDVAL0, which is the CH0 Base
+		LDR		R1,=TFLG_CLR	;Load mask to reset interrupt condition
+		STR		R1,[R0,#TFLG1]	;Store mask at offset
 
 		;Restore and return
 		POP		{R0-R2}
@@ -200,10 +208,12 @@ initPITInterrupt
 PIT_ISR
 PIT_IRQHandler
 			;PIT Interrupt Service Routine
-			;Changes analog output to either high or low voltage
-			;increments count value for time tracking
+			;Final features not yet set in stone
+			;Current plan is to set the LED color on interrupt
+			;This will emulate if the shift on the LEDs was
+			;done at a 50Hz rate
 			;Input: None (ISR)
-			;Output: "Clock" switched, Count incremented
+			;Output: Count incremented, color set (if bool; don't set a color if bike is off)
 			;Regmod: None
 
 			;-----------Modify this code-----------;
@@ -213,6 +223,7 @@ PIT_IRQHandler
             LDR     R1,[R0,#0]          ;Load count data
 			ADDS    R1,R1,#1            ;Increment
             STR     R1,[R0,#0]          ;Store new count
+			;Color changing here please
 			
 endPIT_ISR  
 			;Write 1 to TIF
@@ -223,6 +234,8 @@ endPIT_ISR
 
 
 			ALIGN
+				
+				
 ;------------------------------------------------------
 ;					Variables
 
@@ -236,6 +249,8 @@ Clock	SPACE	HWORD	;Allocate Half word for boolean as to whether
 						;Any other value will be True case
 						
 		ALIGN		;Word align
+			
+			
 ;------------------------------------------------------
 ;					Constants
 

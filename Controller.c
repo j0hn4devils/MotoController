@@ -1,7 +1,7 @@
 /*Controller.c*/
 /*Uses ASM Libraries to perform desired functions*/
 /*Written by: John DeBrino*/
-/*Revision Date: mm/dd/yyyy*/
+/*Revision Date: 12/26/2016*/
 
 /*								Includes							*/
 #include "Controller.h"
@@ -43,8 +43,11 @@ int main(void)
 	__asm("CPSIE	I");
 
 	/*Main loop*/
+	
+	/*Main is currently being used to test features as they are being developed*/
 	for(;;)
 	{
+		/*Cycle through colors*/
 		for(x=0; x <= 20; x++){
 			setColor(WHITE);
 		}

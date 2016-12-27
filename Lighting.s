@@ -3,7 +3,7 @@
 ;Lighting controls library NXP MKL46256XXXX
 ;Written by John DeBrino
 ;Sources referrenced: Roy Melton (CMPE-250 Professor)
-;Revision Date: mm/dd/yyyy
+;Revision Date: 12/26/2016
 
 ;-----------------------------------------------------
 ;		  Assembler Directives and Includes
@@ -44,22 +44,33 @@ setColor	;Sends
 			;Input: Color in R0
 			;Output: None
 			;Regmod: None
-		PUSH	{R0-R3,LR}
-		LDR		R1,=SPI_DL	;Load data output register
-		LDR		R2,=SPI_BASE
+			
+		;Save registers
+		PUSH	{R0-R3}			;No LR; Faster implementation
 		
-		LDRB	R3,[R2,#0]
+		;Load addresses
+		LDR		R1,=SPI_DL		;Load data output register
+		LDR		R2,=SPI_BASE	;Load the base, which is the status register
+		
+		;Color transmission
+		CPSID	I				;Critical code
+		
+		LDRB	R3,[R2,#0]		;Must read before a write
 		STRB	R1,[R1,#0]		;Store new color
 		NOP
-		LSRS	R0,R0,#SHIFT
-		LDRB	R3,[R2,#0]
+		LSRS	R0,R0,#SHIFT	;Shift right 8 bits to get next portion of color code
+		LDRB	R3,[R2,#0]		;Must read before a write
 		STRB	R1,[R1,#0]		;Store new color
 		NOP
-		LSRS	R0,R0,#SHIFT
-		LDRB	R3,[R2,#0]
+		LSRS	R0,R0,#SHIFT	;Shift right 8 bits to get next portion of color code
+		LDRB	R3,[R2,#0]		;Must read before a write
 		STRB	R1,[R1,#0]		;Store new color
 		NOP
-		POP		{R0-R3,PC}
+		CPSIE	I				;End of Critical code
+		
+		;Restore and return
+		POP		{R0-R3}
+		BX		LR
 			
 		ALIGN
 ;-----------------------------------------------------
