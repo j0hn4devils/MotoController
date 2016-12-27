@@ -26,26 +26,34 @@
 #define SCGC6 (0x103Cu)
 /*								  Code								*/
 
-/*							Initializations					*/
-
-
 /*Main code; runs on startup*/
 int main(void)
 {
+	int x = 0;
+	int y = 0;
+	int z = 0;
 
 	/*Board initializations*/
-	__asm("CPSID	I");
+ 	__asm("CPSID	I");
 
-	initGPIOLightDataOut();
+	/*initGPIOLightDataOut();*/
+	initSPI();
 	initPITInterrupt();
-	initDAC0();
 
 	__asm("CPSIE	I");
 
 	/*Main loop*/
 	for(;;)
 	{
-		setColor(WHITE);
+		for(x=0; x <= 20; x++){
+			setColor(WHITE);
+		}
+		for(y=0; y <= 20; y++){
+			setColor(AMBER);
+		}
+		for(z=0; z <= 20; z++){
+			setColor(NOCOLOR);
+		}
 	}
 
 	return 0;

@@ -23,15 +23,23 @@ WORD		EQU 4			;Word size
 HWORD		EQU	2			;Half word size
 BYTE		EQU 1			;Byte size
 
+
+;						SCGC4
+SIM_SCGC4	EQU 0x40048034
+SPI0_MASK	EQU	0x00400000
+
+
 ;						SCGC5
 SIM_SCGC5	EQU	0x40048038	;Absolute Address of SCGC5 Module
 EN_PTE		EQU	0x00001000	;Mask to enable PORT E in SCGC5
 	;Modify previous entry to enable ports B-E for future compatability
 
+
 ;						SCGC6
 SIM_SCGC6	EQU	0x4004803C	;Absolute Address of SCGC6 Module
 EN_PIT		EQU	0x00800000	;Mask to enable PIT
 EN_DAC		EQU	0x80000000	;Mask to enable DAC0
+
 
 ;						 PIT
 PIT_BASE	EQU	0x40037000	;Base for PIT
@@ -42,14 +50,16 @@ TCTRL		EQU	0x08		;TCTRL offset to be used with LDVAL0 Base
 EN_TCTRL	EQU	0x00000003	;Enable Timer and Timer interrupt
 TFLG1		EQU	0x0C		;Timer flag register offset
 TFLG_CLR	EQU	0x00000001	;Mask to clear timer interrupt (w1c)	
-	
+
+
 ;						 NVIC
 NVIC		EQU	0xE000E100	;Interrupt controller base address
 PIT_PRI_POS	EQU	0x16		;Pit Priority position
 PIT_MASK	EQU	(1 << PIT_PRI_POS)	;PIT IRQ Priority mask (Roy W Melton)
 PIT_IPR		EQU (NVIC + 0x314) 		;IPR5 offset
 PIT_IRQ_PRI	EQU	(0 << PIT_PRI_POS)	;Set PIT Priority to 0 (highest)
-	
+
+
 ;						DAC/ADC
 DAC0_BASE	EQU	0x4003F000			;DAC0 Base
 DAT0L		EQU	DAC0_BASE			
@@ -64,9 +74,10 @@ C0_DACEN_VDDREF_HP	EQU	0xC0		;Enables DAC, uses VDD as refernce
 DATHL_LOW	EQU 0x00	;Low voltage for DATH/L
 DATH_HIGH	EQU 0x0E	;High voltage for DATH
 DATL_HIGH	EQU	0xFF	;High voltage for DATL
-	
+
+
 ;						PORTE
-PORTE_BASE	EQU 0x4004D000			;Base for port E
+PORTE_BASE	EQU 0x4004C000			;Base for port E
 PCR_30_OFFSET	EQU	0x78			;Offset for PCR30
 PTE_PCR0	EQU	PORTE_BASE			;PCR 0 located at base
 PTE_PCR30	EQU (PORTE_BASE + PCR_30_OFFSET);PCR 30
@@ -75,8 +86,23 @@ ANALOG_OUT	EQU 0x00000000			;Mask to multiplex analog output
 ANALOG_MASK	EQU (ISF_MASK :OR: ANALOG_OUT)	;Mask to fully enable analog out
 GPIO_OUT	EQU 0x00000100			;Mask to muliplex GPIO Output
 GPIO_MASK	EQU	(ISF_MASK :OR: GPIO_OUT)	;Mask to fully enable GPIO out
+
+
+;						 SPI
+SPI_BASE	EQU	0x40076000
+SPI_BAUD	EQU (SPI_BASE + 0x01)
+SPI_C2		EQU (SPI_BASE + 0x02)
+SPI_C1		EQU (SPI_BASE + 0x03)
+SPI_DL		EQU	(SPI_BASE + 0x06)
+SPI_DH		EQU	(SPI_BASE + 0x07)
+SPI_C3		EQU	(SPI_BASE + 0x0B)
+C2_8BIT		EQU	0x08		;Mask for C2 to ensure 8 bit mode
+C1_EN_MSTR	EQU	0x50		;Enables SPI and initalizes as master device
+BAUD_MASK	EQU 0x00		;Mask for baud register
+EN_FIFO		EQU	0x01		;Enables 64 bit FIFO
+
 ;-----------------------------------------------------
-; 					Define Program
+; 					Define Library
 
 		AREA	ControlLibrary,CODE,READONLY
 		ENTRY
@@ -85,114 +111,36 @@ GPIO_MASK	EQU	(ISF_MASK :OR: GPIO_OUT)	;Mask to fully enable GPIO out
 ;-----------------------------------------------------
 ;					Begin Library
 
+		EXPORT initSPI
+initSPI
+		;Inits SPI for data transmission, 8 bit mode
+		;comment here
+		
+		PUSH	{R0-R1}
+		;Enable module in SCGC4
+		LDR		R0,=SIM_SCGC4
+		LDR		R1,=SPI0_MASK
+		LDR		R2,[R0,#0]
+		ORRS	R2,R2,R1
+		STR		R2,[R0,#0]
+		
+		LDR		R0,=SPI_BAUD
+		MOVS	R1,#BAUD_MASK
+		STRB	R1,[R0,#0]
+		
+		LDR		R0,=SPI_C1		;Load C1 address
+		MOVS	R1,#C1_EN_MSTR	;Load mask
+		STRB	R1,[R0,#0]		;Store mask
+		
+		LDR		R0,=SPI_C2		;Load C2
+		MOVS	R1,#C2_8BIT		;Load mask
+		STRB	R1,[R0,#0]		;Store mask
 
-		EXPORT initGPIOLightDataOut
-initGPIOLightDataOut
-		;Initializes the GPOIO Port E
-		;This is to allow output for the LED Strip
-		;Write to data register to output
-		;Input: None
-		;Output: Initializations for GPIO
-		;Regmod: None
-
-		PUSH	{R0-R2,LR}			;Save registers
 		
-		;Enable clock for Port E
-		LDR		R0,=SIM_SCGC5		;Load SCGC5 address
-		LDR		R1,=EN_PTE			;Load PortE mask
-		LDR		R2,[R0,#0]			;Load current SCGC5 value
-		ORRS	R2,R2,R1			;Mask SCGC5
-		STR		R2,[R0,#0]			;Store new SCGC5 value
-		
-		;Port control register for pin 0
-		LDR		R0,=PTE_PCR0		;Load PCR0
-		LDR		R7,[R0,#0]			;debug
-		LDR		R1,=GPIO_MASK		;Load ISF Mask
-		STR		R1,[R0,#0]			;Store mask
-		POP		{R0-R2,PC}			;Restore and return
-
-		EXPORT initDAC0
-initDAC0
-		;Initailizes the DAC 0 for output to PTE PIN30
-		;Input: None
-		;Output: Initailized DAC (.81mV)
-		;Regmod: None
-		
-		PUSH	{R0-R2};			;Save registers
-		
-		;SCGC6 initailization
-		LDR		R0,=SIM_SCGC6		;Load SCGC6 base
-		LDR		R1,=EN_DAC			;Load mask
-		LDR		R2,[R0,#0]			;Load SCGC6's current value
-		ORRS	R2,R2,R1			;Or in the mask
-		STR		R2,[R0,#0]			;Store orred mask in SCGC6
-		
-		;SCGC5 initialization
-		LDR		R0,=SIM_SCGC5		;Load SCGC5 address
-		LDR		R1,=EN_PTE			;Load PortE mask
-		LDR		R2,[R0,#0]			;Load current SCGC5 value
-		ORRS	R2,R2,R1			;Mask SCGC5
-		STR		R2,[R0,#0]			;Store new SCGC5 value
-		
-		;Map output to pin 30
-		LDR		R0,=PTE_PCR30		;Load PCR 30
-		LDR		R1,=ANALOG_MASK		;Load mask
-		STR		R1,[R0,#0]			;Store mask
-		
-		;Init C1
-		LDR		R0,=DAC0_C1			;Load C1
-		MOVS	R1,#C1_DMA_DISABLE	;Load mask
-		STRB	R1,[R0,#0]			;Store mask
-		
-		;C2 needs no initialization
-		
-		;Init C0
-		LDR		R0,=DAC0_C0				;Load C0
-		MOVS	R1,#C0_DACEN_VDDREF_HP	;Load mask
-		STRB	R1,[R0,#0]				;Store mask
-		
-		;Initalize to low voltage
-		LDR		R0,=DAT0L			;Load DAT0L
-		MOVS	R1,#DATHL_LOW		;Load mask for DAT0L or DAT0H
-		STRB	R1,[R0,#0]			;Store mask at DAT0L
-		STRB	R1,[R0,#1]			;Store mask at DAT0H
-		
-		POP		{R0-R2}				;Restore and return
+		POP		{R0-R1}
 		BX		LR
-
-
-changeClock
-		;Sets analog output to either 1 or 0
-		;used in PIT_ISR to create clock
-		;Input: None
-		;Output: either 3.3V or 0V to pin
-		;Regmod: None
-
-		PUSH	{R0-R2}			;Preserve registers
-								;No LR (Lowest level Subroutine)
-
-		LDR		R0,=Clock		;Get High/Low Boolean
-		LDR		R1,[R0,#0]		;Get High/Low Value
-		CMP		R1,#0			;Compare to 0 (low)
-		BEQ		Low				;If 0, change Voltage from low to high
-High	LDR		R1,=DAT0L		;Load DAT0L
-		MOVS	R2,#DATHL_LOW	;Load Low voltage mask
-		STRB	R2,[R1,#1]		;Store at DATH
-		STRB	R2,[R1,#0]		;Store at DATL
-		STR		R2,[R0,#0]		;Store new "bool" value at =Clock
-		POP		{R0-R2}			;Restore and return
-		BX		LR
-
-Low		LDR		R1,=DAT0L 		;Load DAT0L
-		MOVS	R2,#DATL_HIGH	;Load high voltage mask for DATL
-		STRB	R2,[R1,#0]		;Store mask at DATL
-		MOVS	R2,#DATH_HIGH	;Load high voltage mask for DATH
-		STRB	R2,[R1,#1]		;Store mask at DATH
-		STR		R2,[R0,#0]		;Store new "bool" value at =Clock
-		POP		{R0-R2}			;Restore and return
-		BX		LR
-
-
+		
+		 
 		EXPORT	initPITInterrupt
 initPITInterrupt
 		;Initialize the PIT module for periodic interrupts
@@ -265,7 +213,6 @@ PIT_IRQHandler
             LDR     R1,[R0,#0]          ;Load count data
 			ADDS    R1,R1,#1            ;Increment
             STR     R1,[R0,#0]          ;Store new count
-			BL		changeClock			;Change clock output
 			
 endPIT_ISR  
 			;Write 1 to TIF

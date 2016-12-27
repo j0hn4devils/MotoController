@@ -13,6 +13,6 @@ typedef unsigned int UInt32;
 /*         Controller.s         */
 extern void initGPIOLightDataOut(void);
 extern void initPITInterrupt(void);
-extern void initDAC0(void);
+extern void initSPI(void);
 /*					Lighting.s					*/
 extern void setColor(int Color);
