@@ -43,15 +43,15 @@ int main(void)
 	__asm("CPSIE	I");
 
 	/*Main loop*/
-	
+
 	/*Main is currently being used to test features as they are being developed*/
 	for(;;)
 	{
 		/*Cycle through colors*/
 		setColor(WHITE);
+		wait(1000);
 		setColor(AMBER);
-		
-		
+		wait(1000);
 	}
 
 	return 0;
