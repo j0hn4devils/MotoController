@@ -14,7 +14,7 @@ typedef unsigned int UInt32;
 extern void initGPIOLightDataOut(void);
 extern void initPITInterrupt(void);
 extern void initSPI(void);
-
+extern void Wait(void);
 
 /*					Lighting.s					*/
 extern void setColor(int Color);

@@ -10,8 +10,8 @@
 #define LED_STRIP_SIZE	30 /* # of LEDs in strip */
 
 /*								Colors								*/
-#define WHITE	(0x00FFFFFFu)
-#define AMBER	(0x00FFC200u)
+#define WHITE	(0xFFFFFFFFu)
+#define AMBER	(0x00334466u)
 #define	NOCOLOR	(0x00000000u)
 
 /* 									DAC 								*/
@@ -48,15 +48,10 @@ int main(void)
 	for(;;)
 	{
 		/*Cycle through colors*/
-		for(x=0; x <= 20; x++){
-			setColor(WHITE);
-		}
-		for(y=0; y <= 20; y++){
-			setColor(AMBER);
-		}
-		for(z=0; z <= 20; z++){
-			setColor(NOCOLOR);
-		}
+		setColor(WHITE);
+		setColor(AMBER);
+		
+		
 	}
 
 	return 0;
