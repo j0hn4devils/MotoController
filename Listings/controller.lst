@@ -1,0 +1,2343 @@
+
+
+
+ARM Macro Assembler    Page 1 Controller.s
+
+
+    1 00000000                 TTL              Controller.s
+    2 00000000         ;-----------------------------------------------------
+    3 00000000         ;Initialize background tasks (UART,TPM,etc)
+    4 00000000         ;Written by John DeBrino
+    5 00000000         ;Sources referrenced: Roy Melton (CMPE-250 Professor)
+    6 00000000         ;Revision Date: 12/26/2016
+    7 00000000         ;-----------------------------------------------------
+    8 00000000         ;    Assembler Directives and Includes
+    9 00000000         
+   10 00000000                 THUMB
+   11 00000000                 GBLL             MIXED_ASM_C
+   12 00000000 TRUE     
+                       MIXED_ASM_C
+                               SETL             {TRUE}
+   15 00000000         
+   16 00000000         ;-----------------------------------------------------
+   17 00000000         ;        Equates
+   18 00000000         
+   19 00000000         ;General
+   20 00000000         ;Sizes are in multiples of 8 bits
+   21 00000000 00000008 
+                       DWORD   EQU              8           ;Double word size
+   22 00000000 00000004 
+                       WORD    EQU              4           ;Word size
+   23 00000000 00000002 
+                       HWORD   EQU              2           ;Half word size
+   24 00000000 00000001 
+                       BYTE    EQU              1           ;Byte size
+   25 00000000         
+   26 00000000         
+   27 00000000         ;      SCGC4
+   28 00000000 40048034 
+                       SIM_SCGC4
+                               EQU              0x40048034
+   29 00000000 00400000 
+                       SPI0_MASK
+                               EQU              0x00400000
+   30 00000000         
+   31 00000000         
+   32 00000000         ;      SCGC5
+   33 00000000 40048038 
+                       SIM_SCGC5
+                               EQU              0x40048038  ;Absolute Address of SCGC5 Module
+
+
+
+ARM Macro Assembler    Page 2 Controller.s
+
+
+   34 00000000 00001000 
+                       EN_PTE  EQU              0x00001000  ;Mask to enable PORT E in SCGC5
+   35 00000000         ;Modify previous entry to enable ports B-E for future compatability
+   36 00000000         
+   37 00000000         
+   38 00000000         ;      SCGC6
+   39 00000000 4004803C 
+                       SIM_SCGC6
+                               EQU              0x4004803C  ;Absolute Address of SCGC6 Module
+   40 00000000 00800000 
+                       EN_PIT  EQU              0x00800000  ;Mask to enable PIT
+   41 00000000 80000000 
+                       EN_DAC  EQU              0x80000000  ;Mask to enable DAC0
+   42 00000000         
+   43 00000000         
+   44 00000000         ;       PIT
+   45 00000000 40037000 
+                       PIT_BASE
+                               EQU              0x40037000  ;Base for PIT
+   46 00000000 00000001 
+                       DEBUG_EN
+                               EQU              0x00000001  ;Allow debugging by stopping timer in debug mode
+   47 00000000 40037100 
+                       PIT_LDVAL0
+                               EQU              0x40037100  ;PIT LDVAL register (Also CH0 base)
+   48 00000000 0003A97F 
+                       INT_10ms
+                               EQU              0x0003A97F  ;Value for LDVAL for 10ms interrupt
+   49 00000000 00000008 
+                       TCTRL   EQU              0x08        ;TCTRL offset to be used with LDVAL0 Base
+   50 00000000 00000003 
+                       EN_TCTRL
+                               EQU              0x00000003  ;Enable Timer and Timer interrupt
+   51 00000000 0000000C 
+                       TFLG1   EQU              0x0C        ;Timer flag register offset
+   52 00000000 00000001 
+                       TFLG_CLR
+                               EQU              0x00000001  ;Mask to clear timer interrupt (w1c) 
+   53 00000000         
+   54 00000000         
+   55 00000000         ;       NVIC
+   56 00000000 E000E100 
+                       NVIC    EQU              0xE000E100  ;Interrupt controller base address
+
+
+
+ARM Macro Assembler    Page 3 Controller.s
+
+
+   57 00000000 00000016 
+                       PIT_PRI_POS
+                               EQU              0x16        ;Pit Priority position
+   58 00000000 00400000 
+                       PIT_MASK
+                               EQU              (1 << PIT_PRI_POS) ;PIT IRQ Priority mask (Roy W Melton)
+   59 00000000 E000E414 
+                       PIT_IPR EQU              (NVIC + 0x314) ;IPR5 offset
+   60 00000000 00000000 
+                       PIT_IRQ_PRI
+                               EQU              (0 << PIT_PRI_POS) ;Set PIT Priority to 0 (highest)
+   61 00000000         
+   62 00000000         
+   63 00000000         ;      DAC/ADC
+   64 00000000 4003F000 
+                       DAC0_BASE
+                               EQU              0x4003F000  ;DAC0 Base
+   65 00000000 4003F000 
+                       DAT0L   EQU              DAC0_BASE
+   66 00000000 4003F001 
+                       DAT0H   EQU              (DAC0_BASE + 0x01)
+   67 00000000 4003F020 
+                       DAC0_SR EQU              (DAC0_BASE + 0x20)
+   68 00000000 4003F021 
+                       DAC0_C0 EQU              (DAC0_BASE + 0x21)
+   69 00000000 4003F022 
+                       DAC0_C1 EQU              (DAC0_BASE + 0x22)
+   70 00000000 4003F023 
+                       DAC0_C2 EQU              (DAC0_BASE + 0x23)
+   71 00000000 00000000 
+                       C1_DMA_DISABLE
+                               EQU              0x00        ;Mask to diable DMA/buffer
+   72 00000000 000000C0 
+                       C0_DACEN_VDDREF_HP
+                               EQU              0xC0        ;Enables DAC, uses VDD as refernce
+   73 00000000         ;voltage, and High power mode is enabled
+   74 00000000 00000000 
+                       DATHL_LOW
+                               EQU              0x00        ;Low voltage for DATH/L
+   75 00000000 0000000E 
+                       DATH_HIGH
+                               EQU              0x0E        ;High voltage for DATH
+   76 00000000 000000FF 
+
+
+
+ARM Macro Assembler    Page 4 Controller.s
+
+
+                       DATL_HIGH
+                               EQU              0xFF        ;High voltage for DATL
+   77 00000000         
+   78 00000000         
+   79 00000000         ;      PORTE
+   80 00000000 4004C000 
+                       PORTE_BASE
+                               EQU              0x4004C000  ;Base for port E
+   81 00000000 00000078 
+                       PCR_30_OFFSET
+                               EQU              0x78        ;Offset for PCR30
+   82 00000000 4004C000 
+                       PTE_PCR0
+                               EQU              PORTE_BASE  ;PCR 0 located at base
+   83 00000000 4004C078 
+                       PTE_PCR30
+                               EQU              (PORTE_BASE + PCR_30_OFFSET) ;PCR 30
+   84 00000000 01000000 
+                       ISF_MASK
+                               EQU              0x01000000  ;Mask to clear ISF (w1c)
+   85 00000000 00000000 
+                       ANALOG_OUT
+                               EQU              0x00000000  ;Mask to multiplex analog output
+   86 00000000 01000000 
+                       ANALOG_MASK
+                               EQU              (ISF_MASK :OR: ANALOG_OUT) ;Mask to fully enable analog out
+   87 00000000 00000100 
+                       GPIO_OUT
+                               EQU              0x00000100  ;Mask to muliplex GPIO Output
+   88 00000000 01000100 
+                       GPIO_MASK
+                               EQU              (ISF_MASK :OR: GPIO_OUT) ;Mask to fully enable GPIO out
+   89 00000000         
+   90 00000000         
+   91 00000000         ;       SPI
+   92 00000000 40076000 
+                       SPI_BASE
+                               EQU              0x40076000
+   93 00000000 40076001 
+                       SPI_BAUD
+                               EQU              (SPI_BASE + 0x01)
+   94 00000000 40076002 
+                       SPI_C2  EQU              (SPI_BASE + 0x02)
+
+
+
+ARM Macro Assembler    Page 5 Controller.s
+
+
+   95 00000000 40076003 
+                       SPI_C1  EQU              (SPI_BASE + 0x03)
+   96 00000000 40076006 
+                       SPI_DL  EQU              (SPI_BASE + 0x06)
+   97 00000000 40076007 
+                       SPI_DH  EQU              (SPI_BASE + 0x07)
+   98 00000000 4007600B 
+                       SPI_C3  EQU              (SPI_BASE + 0x0B)
+   99 00000000 00000000 
+                       C2_8BIT EQU              0x00        ;Mask for C2 to ensure 8 bit mode
+  100 00000000 00000050 
+                       C1_EN_MSTR
+                               EQU              0x50        ;Enables SPI and initalizes as master device
+  101 00000000 00000022 
+                       BAUD_MASK
+                               EQU              0x22        ;Mask for baud register
+  102 00000000 00000001 
+                       EN_FIFO EQU              0x01        ;Enables 64 bit FIFO
+  103 00000000         
+  104 00000000         ;-----------------------------------------------------
+  105 00000000         ;      Define Library
+  106 00000000         
+  107 00000000                 AREA             ControlLibrary,CODE,READONLY
+  108 00000000                 ENTRY
+  109 00000000                 EXPORT           ControlLibrary
+  110 00000000         
+  111 00000000         ;-----------------------------------------------------
+  112 00000000         ;     Begin Library
+  113 00000000         
+  114 00000000                 EXPORT           initSPI
+  115 00000000         initSPI
+  116 00000000         ;Inits SPI for data transmission, 8 bit mode
+  117 00000000         ;The purpose for the SPI is to drive an LED Strip
+  118 00000000         ;Input: None
+  119 00000000         ;Output: SPI Initialized; ready for data transmission
+  120 00000000         ;Regmod: None
+  121 00000000         
+  122 00000000         ;Save Registers
+  123 00000000 B407            PUSH             {R0-R2}     ;No LR; Faster implementation
+  124 00000002         
+  125 00000002         ;Enable module in SCGC4
+  126 00000002 4819            LDR              R0,=SIM_SCGC4 ;Load SCGC4 address
+  127 00000004 4919            LDR              R1,=SPI0_MASK ;Load mask to enable clock
+
+
+
+ARM Macro Assembler    Page 6 Controller.s
+
+
+  128 00000006 6802            LDR              R2,[R0,#0]  ;Load current SCGC4 value (don't disable other modules)
+  129 00000008 430A            ORRS             R2,R2,R1    ;Or in the mask to enable SPI0
+  130 0000000A 6002            STR              R2,[R0,#0]  ;Store new value at SCGC4
+  131 0000000C         
+  132 0000000C         ;Set the BAUD rate
+  133 0000000C 4818            LDR              R0,=SPI_BAUD ;Load the BAUD rate register
+  134 0000000E 2122            MOVS             R1,#BAUD_MASK ;Load the mask for desired BAUD rate
+  135 00000010 7001            STRB             R1,[R0,#0]  ;Store the new baud rate
+  136 00000012         
+  137 00000012         ;Control register 1 initalizations
+  138 00000012 4818            LDR              R0,=SPI_C1  ;Load C1 address
+  139 00000014 2150            MOVS             R1,#C1_EN_MSTR ;Load mask to enable SPI0 as a master device
+  140 00000016 7001            STRB             R1,[R0,#0]  ;Store mask at C1
+  141 00000018         
+  142 00000018         ;Control register 2 initializations
+  143 00000018 4817            LDR              R0,=SPI_C2  ;Load C2 address
+  144 0000001A 2100            MOVS             R1,#C2_8BIT ;Load mask to ensure 8 bit operation
+  145 0000001C 7001            STRB             R1,[R0,#0]  ;Store mask at C2
+  146 0000001E         
+  147 0000001E         ;Restore and return
+  148 0000001E BC07            POP              {R0-R2}
+  149 00000020 4770            BX               LR
+  150 00000022         
+  151 00000022         
+  152 00000022                 EXPORT           initPITInterrupt
+  153 00000022         initPITInterrupt
+  154 00000022         ;Initialize the PIT module for periodic interrupts
+  155 00000022         ;This will be used to create the clock (if possible)
+  156 00000022         ;Input: None
+  157 00000022         ;Output: Initialized PIT
+  158 00000022         ;Regmod: None
+  159 00000022         
+  160 00000022         ;PUSH modified registers
+  161 00000022         ;PC not pushed as BX LR is more efficient/no nested subroutines
+  162 00000022 B407            PUSH             {R0-R2}
+  163 00000024         
+  164 00000024         ;Enable PIT in Gate Control 6 register
+  165 00000024 4815            LDR              R0,=SIM_SCGC6 ;Load SCGC6 base
+  166 00000026 4916            LDR              R1,=EN_PIT  ;Load mask to enable PIT
+  167 00000028 6802            LDR              R2,[R0,#0]  ;Load current SCGC6 value
+  168 0000002A 430A            ORRS             R2,R2,R1    ;Or in the mask
+  169 0000002C 6002            STR              R2,[R0,#0]  ;Store new SCGC6 value
+  170 0000002E         
+
+
+
+ARM Macro Assembler    Page 7 Controller.s
+
+
+  171 0000002E         ;Disable timer when in debug mode
+  172 0000002E 4815            LDR              R0,=PIT_BASE ;Load PIT base
+  173 00000030 4915            LDR              R1,=DEBUG_EN ;Load mask to disable timer in debug mode
+  174 00000032 6001            STR              R1,[R0,#0]  ;Store mask
+  175 00000034         
+  176 00000034         ;Set interrupt interval for 10ms
+  177 00000034 4815            LDR              R0,=PIT_LDVAL0 ;Load LDVAL0 Register
+  178 00000036 4916            LDR              R1,=INT_10ms ;Load 10ms interrupt mask
+  179 00000038 6001            STR              R1,[R0,#0]  ;Store mask
+  180 0000003A         
+  181 0000003A         ;Enable PIT Timer
+  182 0000003A 4916            LDR              R1,=EN_TCTRL ;Load TCTRL mask
+  183 0000003C 6081            STR              R1,[R0,#TCTRL] ;Store mask at TCTRL offset
+  184 0000003E         
+  185 0000003E         ;NVIC Configuration
+  186 0000003E         
+  187 0000003E         ;Unmask Pit interrupts
+  188 0000003E 4816            LDR              R0,=NVIC    ;Load NVIC Base
+  189 00000040 490A            LDR              R1,=PIT_MASK ;Load IRQ Priority mask
+  190 00000042 6001            STR              R1,[R0,#0]  ;Store Priority
+  191 00000044         
+  192 00000044         ;Set Priority
+  193 00000044 4815            LDR              R0,=PIT_IPR ;Load PIT IPR
+  194 00000046 4916            LDR              R1,=PIT_IRQ_PRI ;Load priority
+  195 00000048 6001            STR              R1,[R0,#0]  ;Store
+  196 0000004A         
+  197 0000004A         ;CH0 Interrupt condition
+  198 0000004A 4810            LDR              R0,=PIT_LDVAL0 ;Load LDVAL0, which is the CH0 Base
+  199 0000004C 490E            LDR              R1,=TFLG_CLR ;Load mask to reset interrupt condition
+  200 0000004E 60C1            STR              R1,[R0,#TFLG1] ;Store mask at offset
+  201 00000050         
+  202 00000050         ;Restore and return
+  203 00000050 BC07            POP              {R0-R2}
+  204 00000052 4770            BX               LR
+  205 00000054         
+  206 00000054         
+  207 00000054                 EXPORT           PIT_IRQHandler
+  208 00000054         PIT_ISR
+  209 00000054         PIT_IRQHandler
+  210 00000054         ;PIT Interrupt Service Routine
+  211 00000054         ;Final features not yet set in stone
+  212 00000054         ;Current plan is to set the LED color on interrupt
+  213 00000054         ;This will emulate if the shift on the LEDs was
+
+
+
+ARM Macro Assembler    Page 8 Controller.s
+
+
+  214 00000054         ;done at a 50Hz rate
+  215 00000054         ;Input: None (ISR)
+  216 00000054         ;Output: Count incremented, color set (if bool; don't set a color if bike is off)
+  217 00000054         ;Regmod: None
+  218 00000054         
+  219 00000054         ;-----------Modify this code-----------;
+  220 00000054         
+  221 00000054 B500            PUSH             {LR}        ;Only PUSH LR, R0-R3 auto pushed by CPU
+  222 00000056 4813            LDR              R0,=Count   ;Load count address
+  223 00000058 6801            LDR              R1,[R0,#0]  ;Load count data
+  224 0000005A 1C49            ADDS             R1,R1,#1    ;Increment
+  225 0000005C 6001            STR              R1,[R0,#0]  ;Store new count
+  226 0000005E         ;Color changing here please
+  227 0000005E         
+  228 0000005E         endPIT_ISR
+  229 0000005E         ;Write 1 to TIF
+  230 0000005E 480B            LDR              R0,=PIT_LDVAL0 ;Load CH0 base
+  231 00000060 4909            LDR              R1,=TFLG_CLR ;Load mask
+  232 00000062 60C1            STR              R1,[R0,#TFLG1] ;Store at offset
+  233 00000064 BD00            POP              {PC}
+  234 00000066         
+  235 00000066         
+  236 00000066 00 00 40048034 
+              00400000 
+              40076001 
+              40076003 
+              40076002 
+              4004803C 
+              00800000 
+              40037000 
+              00000001 
+              40037100 
+              0003A97F 
+              00000003 
+              E000E100 
+              E000E414 
+              00000000 
+              00000000         LTORG
+  237 000000A8         
+  238 000000A8         
+  239 000000A8                 EXPORT           Wait
+  240 000000A8         Wait
+  241 000000A8         ;The following is only god knows how many NOPS
+
+
+
+ARM Macro Assembler    Page 9 Controller.s
+
+
+  242 000000A8 BF00            NOP
+  243 000000AA BF00            NOP
+  244 000000AC BF00            NOP
+  245 000000AE BF00            NOP
+  246 000000B0 BF00            NOP
+  247 000000B2 BF00            NOP
+  248 000000B4 BF00            NOP
+  249 000000B6 BF00            NOP
+  250 000000B8 BF00            NOP
+  251 000000BA BF00            NOP
+  252 000000BC BF00            NOP
+  253 000000BE BF00            NOP
+  254 000000C0 BF00            NOP
+  255 000000C2 BF00            NOP
+  256 000000C4 BF00            NOP
+  257 000000C6 BF00            NOP
+  258 000000C8 BF00            NOP
+  259 000000CA BF00            NOP
+  260 000000CC BF00            NOP
+  261 000000CE BF00            NOP
+  262 000000D0 BF00            NOP
+  263 000000D2 BF00            NOP
+  264 000000D4 BF00            NOP
+  265 000000D6 BF00            NOP
+  266 000000D8 BF00            NOP
+  267 000000DA BF00            NOP
+  268 000000DC BF00            NOP
+  269 000000DE BF00            NOP
+  270 000000E0 BF00            NOP
+  271 000000E2 BF00            NOP
+  272 000000E4 BF00            NOP
+  273 000000E6 BF00            NOP
+  274 000000E8 BF00            NOP
+  275 000000EA BF00            NOP
+  276 000000EC BF00            NOP
+  277 000000EE BF00            NOP
+  278 000000F0 BF00            NOP
+  279 000000F2 BF00            NOP
+  280 000000F4 BF00            NOP
+  281 000000F6 BF00            NOP
+  282 000000F8 BF00            NOP
+  283 000000FA BF00            NOP
+  284 000000FC BF00            NOP
+
+
+
+ARM Macro Assembler    Page 10 Controller.s
+
+
+  285 000000FE BF00            NOP
+  286 00000100 BF00            NOP
+  287 00000102 BF00            NOP
+  288 00000104 BF00            NOP
+  289 00000106 BF00            NOP
+  290 00000108 BF00            NOP
+  291 0000010A BF00            NOP
+  292 0000010C BF00            NOP
+  293 0000010E BF00            NOP
+  294 00000110 BF00            NOP
+  295 00000112 BF00            NOP
+  296 00000114 BF00            NOP
+  297 00000116 BF00            NOP
+  298 00000118 BF00            NOP
+  299 0000011A BF00            NOP
+  300 0000011C BF00            NOP
+  301 0000011E BF00            NOP
+  302 00000120 BF00            NOP
+  303 00000122 BF00            NOP
+  304 00000124 BF00            NOP
+  305 00000126 BF00            NOP
+  306 00000128 BF00            NOP
+  307 0000012A BF00            NOP
+  308 0000012C BF00            NOP
+  309 0000012E BF00            NOP
+  310 00000130 BF00            NOP
+  311 00000132 BF00            NOP
+  312 00000134 BF00            NOP
+  313 00000136 BF00            NOP
+  314 00000138 BF00            NOP
+  315 0000013A BF00            NOP
+  316 0000013C BF00            NOP
+  317 0000013E BF00            NOP
+  318 00000140 BF00            NOP
+  319 00000142 BF00            NOP
+  320 00000144 BF00            NOP
+  321 00000146 BF00            NOP
+  322 00000148 BF00            NOP
+  323 0000014A BF00            NOP
+  324 0000014C BF00            NOP
+  325 0000014E BF00            NOP
+  326 00000150 BF00            NOP
+  327 00000152 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 11 Controller.s
+
+
+  328 00000154 BF00            NOP
+  329 00000156 BF00            NOP
+  330 00000158 BF00            NOP
+  331 0000015A BF00            NOP
+  332 0000015C BF00            NOP
+  333 0000015E BF00            NOP
+  334 00000160 BF00            NOP
+  335 00000162 BF00            NOP
+  336 00000164 BF00            NOP
+  337 00000166 BF00            NOP
+  338 00000168 BF00            NOP
+  339 0000016A BF00            NOP
+  340 0000016C BF00            NOP
+  341 0000016E BF00            NOP
+  342 00000170 BF00            NOP
+  343 00000172 BF00            NOP
+  344 00000174 BF00            NOP
+  345 00000176 BF00            NOP
+  346 00000178 BF00            NOP
+  347 0000017A BF00            NOP
+  348 0000017C BF00            NOP
+  349 0000017E BF00            NOP
+  350 00000180 BF00            NOP
+  351 00000182 BF00            NOP
+  352 00000184 BF00            NOP
+  353 00000186 BF00            NOP
+  354 00000188 BF00            NOP
+  355 0000018A BF00            NOP
+  356 0000018C BF00            NOP
+  357 0000018E BF00            NOP
+  358 00000190 BF00            NOP
+  359 00000192 BF00            NOP
+  360 00000194 BF00            NOP
+  361 00000196 BF00            NOP
+  362 00000198 BF00            NOP
+  363 0000019A BF00            NOP
+  364 0000019C BF00            NOP
+  365 0000019E BF00            NOP
+  366 000001A0 BF00            NOP
+  367 000001A2 BF00            NOP
+  368 000001A4 BF00            NOP
+  369 000001A6 BF00            NOP
+  370 000001A8 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 12 Controller.s
+
+
+  371 000001AA BF00            NOP
+  372 000001AC BF00            NOP
+  373 000001AE BF00            NOP
+  374 000001B0 BF00            NOP
+  375 000001B2 BF00            NOP
+  376 000001B4 BF00            NOP
+  377 000001B6 BF00            NOP
+  378 000001B8 BF00            NOP
+  379 000001BA BF00            NOP
+  380 000001BC BF00            NOP
+  381 000001BE BF00            NOP
+  382 000001C0 BF00            NOP
+  383 000001C2 BF00            NOP
+  384 000001C4 BF00            NOP
+  385 000001C6 BF00            NOP
+  386 000001C8 BF00            NOP
+  387 000001CA BF00            NOP
+  388 000001CC BF00            NOP
+  389 000001CE BF00            NOP
+  390 000001D0 BF00            NOP
+  391 000001D2 BF00            NOP
+  392 000001D4 BF00            NOP
+  393 000001D6 BF00            NOP
+  394 000001D8 BF00            NOP
+  395 000001DA BF00            NOP
+  396 000001DC BF00            NOP
+  397 000001DE BF00            NOP
+  398 000001E0 BF00            NOP
+  399 000001E2 BF00            NOP
+  400 000001E4 BF00            NOP
+  401 000001E6 BF00            NOP
+  402 000001E8 BF00            NOP
+  403 000001EA BF00            NOP
+  404 000001EC BF00            NOP
+  405 000001EE BF00            NOP
+  406 000001F0 BF00            NOP
+  407 000001F2 BF00            NOP
+  408 000001F4 BF00            NOP
+  409 000001F6 BF00            NOP
+  410 000001F8 BF00            NOP
+  411 000001FA BF00            NOP
+  412 000001FC BF00            NOP
+  413 000001FE BF00            NOP
+
+
+
+ARM Macro Assembler    Page 13 Controller.s
+
+
+  414 00000200 BF00            NOP
+  415 00000202 BF00            NOP
+  416 00000204 BF00            NOP
+  417 00000206 BF00            NOP
+  418 00000208 BF00            NOP
+  419 0000020A BF00            NOP
+  420 0000020C BF00            NOP
+  421 0000020E BF00            NOP
+  422 00000210 BF00            NOP
+  423 00000212 BF00            NOP
+  424 00000214 BF00            NOP
+  425 00000216 BF00            NOP
+  426 00000218 BF00            NOP
+  427 0000021A BF00            NOP
+  428 0000021C BF00            NOP
+  429 0000021E BF00            NOP
+  430 00000220 BF00            NOP
+  431 00000222 BF00            NOP
+  432 00000224 BF00            NOP
+  433 00000226 BF00            NOP
+  434 00000228 BF00            NOP
+  435 0000022A BF00            NOP
+  436 0000022C BF00            NOP
+  437 0000022E BF00            NOP
+  438 00000230 BF00            NOP
+  439 00000232 BF00            NOP
+  440 00000234 BF00            NOP
+  441 00000236 BF00            NOP
+  442 00000238 BF00            NOP
+  443 0000023A BF00            NOP
+  444 0000023C BF00            NOP
+  445 0000023E BF00            NOP
+  446 00000240 BF00            NOP
+  447 00000242 BF00            NOP
+  448 00000244 BF00            NOP
+  449 00000246 BF00            NOP
+  450 00000248 BF00            NOP
+  451 0000024A BF00            NOP
+  452 0000024C BF00            NOP
+  453 0000024E BF00            NOP
+  454 00000250 BF00            NOP
+  455 00000252 BF00            NOP
+  456 00000254 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 14 Controller.s
+
+
+  457 00000256 BF00            NOP
+  458 00000258 BF00            NOP
+  459 0000025A BF00            NOP
+  460 0000025C BF00            NOP
+  461 0000025E BF00            NOP
+  462 00000260 BF00            NOP
+  463 00000262 BF00            NOP
+  464 00000264 BF00            NOP
+  465 00000266 BF00            NOP
+  466 00000268 BF00            NOP
+  467 0000026A BF00            NOP
+  468 0000026C BF00            NOP
+  469 0000026E BF00            NOP
+  470 00000270 BF00            NOP
+  471 00000272 BF00            NOP
+  472 00000274 BF00            NOP
+  473 00000276 BF00            NOP
+  474 00000278 BF00            NOP
+  475 0000027A BF00            NOP
+  476 0000027C BF00            NOP
+  477 0000027E BF00            NOP
+  478 00000280 BF00            NOP
+  479 00000282 BF00            NOP
+  480 00000284 BF00            NOP
+  481 00000286 BF00            NOP
+  482 00000288 BF00            NOP
+  483 0000028A BF00            NOP
+  484 0000028C BF00            NOP
+  485 0000028E BF00            NOP
+  486 00000290 BF00            NOP
+  487 00000292 BF00            NOP
+  488 00000294 BF00            NOP
+  489 00000296 BF00            NOP
+  490 00000298 BF00            NOP
+  491 0000029A BF00            NOP
+  492 0000029C BF00            NOP
+  493 0000029E BF00            NOP
+  494 000002A0 BF00            NOP
+  495 000002A2 BF00            NOP
+  496 000002A4 BF00            NOP
+  497 000002A6 BF00            NOP
+  498 000002A8 BF00            NOP
+  499 000002AA BF00            NOP
+
+
+
+ARM Macro Assembler    Page 15 Controller.s
+
+
+  500 000002AC BF00            NOP
+  501 000002AE BF00            NOP
+  502 000002B0 BF00            NOP
+  503 000002B2 BF00            NOP
+  504 000002B4 BF00            NOP
+  505 000002B6 BF00            NOP
+  506 000002B8 BF00            NOP
+  507 000002BA BF00            NOP
+  508 000002BC BF00            NOP
+  509 000002BE BF00            NOP
+  510 000002C0 BF00            NOP
+  511 000002C2 BF00            NOP
+  512 000002C4 BF00            NOP
+  513 000002C6 BF00            NOP
+  514 000002C8 BF00            NOP
+  515 000002CA BF00            NOP
+  516 000002CC BF00            NOP
+  517 000002CE BF00            NOP
+  518 000002D0 BF00            NOP
+  519 000002D2 BF00            NOP
+  520 000002D4 BF00            NOP
+  521 000002D6 BF00            NOP
+  522 000002D8 BF00            NOP
+  523 000002DA BF00            NOP
+  524 000002DC BF00            NOP
+  525 000002DE BF00            NOP
+  526 000002E0 BF00            NOP
+  527 000002E2 BF00            NOP
+  528 000002E4 BF00            NOP
+  529 000002E6 BF00            NOP
+  530 000002E8 BF00            NOP
+  531 000002EA BF00            NOP
+  532 000002EC BF00            NOP
+  533 000002EE BF00            NOP
+  534 000002F0 BF00            NOP
+  535 000002F2 BF00            NOP
+  536 000002F4 BF00            NOP
+  537 000002F6 BF00            NOP
+  538 000002F8 BF00            NOP
+  539 000002FA BF00            NOP
+  540 000002FC BF00            NOP
+  541 000002FE BF00            NOP
+  542 00000300 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 16 Controller.s
+
+
+  543 00000302 BF00            NOP
+  544 00000304 BF00            NOP
+  545 00000306 BF00            NOP
+  546 00000308 BF00            NOP
+  547 0000030A BF00            NOP
+  548 0000030C BF00            NOP
+  549 0000030E BF00            NOP
+  550 00000310 BF00            NOP
+  551 00000312 BF00            NOP
+  552 00000314 BF00            NOP
+  553 00000316 BF00            NOP
+  554 00000318 BF00            NOP
+  555 0000031A BF00            NOP
+  556 0000031C BF00            NOP
+  557 0000031E BF00            NOP
+  558 00000320 BF00            NOP
+  559 00000322 BF00            NOP
+  560 00000324 BF00            NOP
+  561 00000326 BF00            NOP
+  562 00000328 BF00            NOP
+  563 0000032A BF00            NOP
+  564 0000032C BF00            NOP
+  565 0000032E BF00            NOP
+  566 00000330 BF00            NOP
+  567 00000332 BF00            NOP
+  568 00000334 BF00            NOP
+  569 00000336 BF00            NOP
+  570 00000338 BF00            NOP
+  571 0000033A BF00            NOP
+  572 0000033C BF00            NOP
+  573 0000033E BF00            NOP
+  574 00000340 BF00            NOP
+  575 00000342 BF00            NOP
+  576 00000344 BF00            NOP
+  577 00000346 BF00            NOP
+  578 00000348 BF00            NOP
+  579 0000034A BF00            NOP
+  580 0000034C BF00            NOP
+  581 0000034E BF00            NOP
+  582 00000350 BF00            NOP
+  583 00000352 BF00            NOP
+  584 00000354 BF00            NOP
+  585 00000356 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 17 Controller.s
+
+
+  586 00000358 BF00            NOP
+  587 0000035A BF00            NOP
+  588 0000035C BF00            NOP
+  589 0000035E BF00            NOP
+  590 00000360 BF00            NOP
+  591 00000362 BF00            NOP
+  592 00000364 BF00            NOP
+  593 00000366 BF00            NOP
+  594 00000368 BF00            NOP
+  595 0000036A BF00            NOP
+  596 0000036C BF00            NOP
+  597 0000036E BF00            NOP
+  598 00000370 BF00            NOP
+  599 00000372 BF00            NOP
+  600 00000374 BF00            NOP
+  601 00000376 BF00            NOP
+  602 00000378 BF00            NOP
+  603 0000037A BF00            NOP
+  604 0000037C BF00            NOP
+  605 0000037E BF00            NOP
+  606 00000380 BF00            NOP
+  607 00000382 BF00            NOP
+  608 00000384 BF00            NOP
+  609 00000386 BF00            NOP
+  610 00000388 BF00            NOP
+  611 0000038A BF00            NOP
+  612 0000038C BF00            NOP
+  613 0000038E BF00            NOP
+  614 00000390 BF00            NOP
+  615 00000392 BF00            NOP
+  616 00000394 BF00            NOP
+  617 00000396 BF00            NOP
+  618 00000398 BF00            NOP
+  619 0000039A BF00            NOP
+  620 0000039C BF00            NOP
+  621 0000039E BF00            NOP
+  622 000003A0 BF00            NOP
+  623 000003A2 BF00            NOP
+  624 000003A4 BF00            NOP
+  625 000003A6 BF00            NOP
+  626 000003A8 BF00            NOP
+  627 000003AA BF00            NOP
+  628 000003AC BF00            NOP
+
+
+
+ARM Macro Assembler    Page 18 Controller.s
+
+
+  629 000003AE BF00            NOP
+  630 000003B0 BF00            NOP
+  631 000003B2 BF00            NOP
+  632 000003B4 BF00            NOP
+  633 000003B6 BF00            NOP
+  634 000003B8 BF00            NOP
+  635 000003BA BF00            NOP
+  636 000003BC BF00            NOP
+  637 000003BE BF00            NOP
+  638 000003C0 BF00            NOP
+  639 000003C2 BF00            NOP
+  640 000003C4 BF00            NOP
+  641 000003C6 BF00            NOP
+  642 000003C8 BF00            NOP
+  643 000003CA BF00            NOP
+  644 000003CC BF00            NOP
+  645 000003CE BF00            NOP
+  646 000003D0 BF00            NOP
+  647 000003D2 BF00            NOP
+  648 000003D4 BF00            NOP
+  649 000003D6 BF00            NOP
+  650 000003D8 BF00            NOP
+  651 000003DA BF00            NOP
+  652 000003DC BF00            NOP
+  653 000003DE BF00            NOP
+  654 000003E0 BF00            NOP
+  655 000003E2 BF00            NOP
+  656 000003E4 BF00            NOP
+  657 000003E6 BF00            NOP
+  658 000003E8 BF00            NOP
+  659 000003EA BF00            NOP
+  660 000003EC BF00            NOP
+  661 000003EE BF00            NOP
+  662 000003F0 BF00            NOP
+  663 000003F2 BF00            NOP
+  664 000003F4 BF00            NOP
+  665 000003F6 BF00            NOP
+  666 000003F8 BF00            NOP
+  667 000003FA BF00            NOP
+  668 000003FC BF00            NOP
+  669 000003FE BF00            NOP
+  670 00000400 BF00            NOP
+  671 00000402 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 19 Controller.s
+
+
+  672 00000404 BF00            NOP
+  673 00000406 BF00            NOP
+  674 00000408 BF00            NOP
+  675 0000040A BF00            NOP
+  676 0000040C BF00            NOP
+  677 0000040E BF00            NOP
+  678 00000410 BF00            NOP
+  679 00000412 BF00            NOP
+  680 00000414 BF00            NOP
+  681 00000416 BF00            NOP
+  682 00000418 BF00            NOP
+  683 0000041A BF00            NOP
+  684 0000041C BF00            NOP
+  685 0000041E BF00            NOP
+  686 00000420 BF00            NOP
+  687 00000422 BF00            NOP
+  688 00000424 BF00            NOP
+  689 00000426 BF00            NOP
+  690 00000428 BF00            NOP
+  691 0000042A BF00            NOP
+  692 0000042C BF00            NOP
+  693 0000042E BF00            NOP
+  694 00000430 BF00            NOP
+  695 00000432 BF00            NOP
+  696 00000434 BF00            NOP
+  697 00000436 BF00            NOP
+  698 00000438 BF00            NOP
+  699 0000043A BF00            NOP
+  700 0000043C BF00            NOP
+  701 0000043E BF00            NOP
+  702 00000440 BF00            NOP
+  703 00000442 BF00            NOP
+  704 00000444 BF00            NOP
+  705 00000446 BF00            NOP
+  706 00000448 BF00            NOP
+  707 0000044A BF00            NOP
+  708 0000044C BF00            NOP
+  709 0000044E BF00            NOP
+  710 00000450 BF00            NOP
+  711 00000452 BF00            NOP
+  712 00000454 BF00            NOP
+  713 00000456 BF00            NOP
+  714 00000458 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 20 Controller.s
+
+
+  715 0000045A BF00            NOP
+  716 0000045C BF00            NOP
+  717 0000045E BF00            NOP
+  718 00000460 BF00            NOP
+  719 00000462 BF00            NOP
+  720 00000464 BF00            NOP
+  721 00000466 BF00            NOP
+  722 00000468 BF00            NOP
+  723 0000046A BF00            NOP
+  724 0000046C BF00            NOP
+  725 0000046E BF00            NOP
+  726 00000470 BF00            NOP
+  727 00000472 BF00            NOP
+  728 00000474 BF00            NOP
+  729 00000476 BF00            NOP
+  730 00000478 BF00            NOP
+  731 0000047A BF00            NOP
+  732 0000047C BF00            NOP
+  733 0000047E BF00            NOP
+  734 00000480 BF00            NOP
+  735 00000482 BF00            NOP
+  736 00000484 BF00            NOP
+  737 00000486 BF00            NOP
+  738 00000488 BF00            NOP
+  739 0000048A BF00            NOP
+  740 0000048C BF00            NOP
+  741 0000048E BF00            NOP
+  742 00000490 BF00            NOP
+  743 00000492 BF00            NOP
+  744 00000494 BF00            NOP
+  745 00000496 BF00            NOP
+  746 00000498 BF00            NOP
+  747 0000049A BF00            NOP
+  748 0000049C BF00            NOP
+  749 0000049E BF00            NOP
+  750 000004A0 BF00            NOP
+  751 000004A2 BF00            NOP
+  752 000004A4 BF00            NOP
+  753 000004A6 BF00            NOP
+  754 000004A8 BF00            NOP
+  755 000004AA BF00            NOP
+  756 000004AC BF00            NOP
+  757 000004AE BF00            NOP
+
+
+
+ARM Macro Assembler    Page 21 Controller.s
+
+
+  758 000004B0 BF00            NOP
+  759 000004B2 BF00            NOP
+  760 000004B4 BF00            NOP
+  761 000004B6 BF00            NOP
+  762 000004B8 BF00            NOP
+  763 000004BA BF00            NOP
+  764 000004BC BF00            NOP
+  765 000004BE BF00            NOP
+  766 000004C0 BF00            NOP
+  767 000004C2 BF00            NOP
+  768 000004C4 BF00            NOP
+  769 000004C6 BF00            NOP
+  770 000004C8 BF00            NOP
+  771 000004CA BF00            NOP
+  772 000004CC BF00            NOP
+  773 000004CE BF00            NOP
+  774 000004D0 BF00            NOP
+  775 000004D2 BF00            NOP
+  776 000004D4 BF00            NOP
+  777 000004D6 BF00            NOP
+  778 000004D8 BF00            NOP
+  779 000004DA BF00            NOP
+  780 000004DC BF00            NOP
+  781 000004DE BF00            NOP
+  782 000004E0 BF00            NOP
+  783 000004E2 BF00            NOP
+  784 000004E4 BF00            NOP
+  785 000004E6 BF00            NOP
+  786 000004E8 BF00            NOP
+  787 000004EA BF00            NOP
+  788 000004EC BF00            NOP
+  789 000004EE BF00            NOP
+  790 000004F0 BF00            NOP
+  791 000004F2 BF00            NOP
+  792 000004F4 BF00            NOP
+  793 000004F6 BF00            NOP
+  794 000004F8 BF00            NOP
+  795 000004FA BF00            NOP
+  796 000004FC BF00            NOP
+  797 000004FE BF00            NOP
+  798 00000500 BF00            NOP
+  799 00000502 BF00            NOP
+  800 00000504 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 22 Controller.s
+
+
+  801 00000506 BF00            NOP
+  802 00000508 BF00            NOP
+  803 0000050A BF00            NOP
+  804 0000050C BF00            NOP
+  805 0000050E BF00            NOP
+  806 00000510 BF00            NOP
+  807 00000512 BF00            NOP
+  808 00000514 BF00            NOP
+  809 00000516 BF00            NOP
+  810 00000518 BF00            NOP
+  811 0000051A BF00            NOP
+  812 0000051C BF00            NOP
+  813 0000051E BF00            NOP
+  814 00000520 BF00            NOP
+  815 00000522 BF00            NOP
+  816 00000524 BF00            NOP
+  817 00000526 BF00            NOP
+  818 00000528 BF00            NOP
+  819 0000052A BF00            NOP
+  820 0000052C BF00            NOP
+  821 0000052E BF00            NOP
+  822 00000530 BF00            NOP
+  823 00000532 BF00            NOP
+  824 00000534 BF00            NOP
+  825 00000536 BF00            NOP
+  826 00000538 BF00            NOP
+  827 0000053A BF00            NOP
+  828 0000053C BF00            NOP
+  829 0000053E BF00            NOP
+  830 00000540 BF00            NOP
+  831 00000542 BF00            NOP
+  832 00000544 BF00            NOP
+  833 00000546 BF00            NOP
+  834 00000548 BF00            NOP
+  835 0000054A BF00            NOP
+  836 0000054C BF00            NOP
+  837 0000054E BF00            NOP
+  838 00000550 BF00            NOP
+  839 00000552 BF00            NOP
+  840 00000554 BF00            NOP
+  841 00000556 BF00            NOP
+  842 00000558 BF00            NOP
+  843 0000055A BF00            NOP
+
+
+
+ARM Macro Assembler    Page 23 Controller.s
+
+
+  844 0000055C BF00            NOP
+  845 0000055E BF00            NOP
+  846 00000560 BF00            NOP
+  847 00000562 BF00            NOP
+  848 00000564 BF00            NOP
+  849 00000566 BF00            NOP
+  850 00000568 BF00            NOP
+  851 0000056A BF00            NOP
+  852 0000056C BF00            NOP
+  853 0000056E BF00            NOP
+  854 00000570 BF00            NOP
+  855 00000572 BF00            NOP
+  856 00000574 BF00            NOP
+  857 00000576 BF00            NOP
+  858 00000578 BF00            NOP
+  859 0000057A BF00            NOP
+  860 0000057C BF00            NOP
+  861 0000057E BF00            NOP
+  862 00000580 BF00            NOP
+  863 00000582 BF00            NOP
+  864 00000584 BF00            NOP
+  865 00000586 BF00            NOP
+  866 00000588 BF00            NOP
+  867 0000058A BF00            NOP
+  868 0000058C BF00            NOP
+  869 0000058E BF00            NOP
+  870 00000590 BF00            NOP
+  871 00000592 BF00            NOP
+  872 00000594 BF00            NOP
+  873 00000596 BF00            NOP
+  874 00000598 BF00            NOP
+  875 0000059A BF00            NOP
+  876 0000059C BF00            NOP
+  877 0000059E BF00            NOP
+  878 000005A0 BF00            NOP
+  879 000005A2 BF00            NOP
+  880 000005A4 BF00            NOP
+  881 000005A6 BF00            NOP
+  882 000005A8 BF00            NOP
+  883 000005AA BF00            NOP
+  884 000005AC BF00            NOP
+  885 000005AE BF00            NOP
+  886 000005B0 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 24 Controller.s
+
+
+  887 000005B2 BF00            NOP
+  888 000005B4 BF00            NOP
+  889 000005B6 BF00            NOP
+  890 000005B8 BF00            NOP
+  891 000005BA BF00            NOP
+  892 000005BC BF00            NOP
+  893 000005BE BF00            NOP
+  894 000005C0 BF00            NOP
+  895 000005C2 BF00            NOP
+  896 000005C4 BF00            NOP
+  897 000005C6 BF00            NOP
+  898 000005C8 BF00            NOP
+  899 000005CA BF00            NOP
+  900 000005CC BF00            NOP
+  901 000005CE BF00            NOP
+  902 000005D0 BF00            NOP
+  903 000005D2 BF00            NOP
+  904 000005D4 BF00            NOP
+  905 000005D6 BF00            NOP
+  906 000005D8 BF00            NOP
+  907 000005DA BF00            NOP
+  908 000005DC BF00            NOP
+  909 000005DE BF00            NOP
+  910 000005E0 BF00            NOP
+  911 000005E2 BF00            NOP
+  912 000005E4 BF00            NOP
+  913 000005E6 BF00            NOP
+  914 000005E8 BF00            NOP
+  915 000005EA BF00            NOP
+  916 000005EC BF00            NOP
+  917 000005EE BF00            NOP
+  918 000005F0 BF00            NOP
+  919 000005F2 BF00            NOP
+  920 000005F4 BF00            NOP
+  921 000005F6 BF00            NOP
+  922 000005F8 BF00            NOP
+  923 000005FA BF00            NOP
+  924 000005FC BF00            NOP
+  925 000005FE BF00            NOP
+  926 00000600 BF00            NOP
+  927 00000602 BF00            NOP
+  928 00000604 BF00            NOP
+  929 00000606 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 25 Controller.s
+
+
+  930 00000608 BF00            NOP
+  931 0000060A BF00            NOP
+  932 0000060C BF00            NOP
+  933 0000060E BF00            NOP
+  934 00000610 BF00            NOP
+  935 00000612 BF00            NOP
+  936 00000614 BF00            NOP
+  937 00000616 BF00            NOP
+  938 00000618 BF00            NOP
+  939 0000061A BF00            NOP
+  940 0000061C BF00            NOP
+  941 0000061E BF00            NOP
+  942 00000620 BF00            NOP
+  943 00000622 BF00            NOP
+  944 00000624 BF00            NOP
+  945 00000626 BF00            NOP
+  946 00000628 BF00            NOP
+  947 0000062A BF00            NOP
+  948 0000062C BF00            NOP
+  949 0000062E BF00            NOP
+  950 00000630 BF00            NOP
+  951 00000632 BF00            NOP
+  952 00000634 BF00            NOP
+  953 00000636 BF00            NOP
+  954 00000638 BF00            NOP
+  955 0000063A BF00            NOP
+  956 0000063C BF00            NOP
+  957 0000063E BF00            NOP
+  958 00000640 BF00            NOP
+  959 00000642 BF00            NOP
+  960 00000644 BF00            NOP
+  961 00000646 BF00            NOP
+  962 00000648 BF00            NOP
+  963 0000064A BF00            NOP
+  964 0000064C BF00            NOP
+  965 0000064E BF00            NOP
+  966 00000650 BF00            NOP
+  967 00000652 BF00            NOP
+  968 00000654 BF00            NOP
+  969 00000656 BF00            NOP
+  970 00000658 BF00            NOP
+  971 0000065A BF00            NOP
+  972 0000065C BF00            NOP
+
+
+
+ARM Macro Assembler    Page 26 Controller.s
+
+
+  973 0000065E BF00            NOP
+  974 00000660 BF00            NOP
+  975 00000662 BF00            NOP
+  976 00000664 BF00            NOP
+  977 00000666 BF00            NOP
+  978 00000668 BF00            NOP
+  979 0000066A BF00            NOP
+  980 0000066C BF00            NOP
+  981 0000066E BF00            NOP
+  982 00000670 BF00            NOP
+  983 00000672 BF00            NOP
+  984 00000674 BF00            NOP
+  985 00000676 BF00            NOP
+  986 00000678 BF00            NOP
+  987 0000067A BF00            NOP
+  988 0000067C BF00            NOP
+  989 0000067E BF00            NOP
+  990 00000680 BF00            NOP
+  991 00000682 BF00            NOP
+  992 00000684 BF00            NOP
+  993 00000686 BF00            NOP
+  994 00000688 BF00            NOP
+  995 0000068A BF00            NOP
+  996 0000068C BF00            NOP
+  997 0000068E BF00            NOP
+  998 00000690 BF00            NOP
+  999 00000692 BF00            NOP
+ 1000 00000694 BF00            NOP
+ 1001 00000696 BF00            NOP
+ 1002 00000698 BF00            NOP
+ 1003 0000069A BF00            NOP
+ 1004 0000069C BF00            NOP
+ 1005 0000069E BF00            NOP
+ 1006 000006A0 BF00            NOP
+ 1007 000006A2 BF00            NOP
+ 1008 000006A4 BF00            NOP
+ 1009 000006A6 BF00            NOP
+ 1010 000006A8 BF00            NOP
+ 1011 000006AA BF00            NOP
+ 1012 000006AC BF00            NOP
+ 1013 000006AE BF00            NOP
+ 1014 000006B0 BF00            NOP
+ 1015 000006B2 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 27 Controller.s
+
+
+ 1016 000006B4 BF00            NOP
+ 1017 000006B6 BF00            NOP
+ 1018 000006B8 BF00            NOP
+ 1019 000006BA BF00            NOP
+ 1020 000006BC BF00            NOP
+ 1021 000006BE BF00            NOP
+ 1022 000006C0 BF00            NOP
+ 1023 000006C2 BF00            NOP
+ 1024 000006C4 BF00            NOP
+ 1025 000006C6 BF00            NOP
+ 1026 000006C8 BF00            NOP
+ 1027 000006CA BF00            NOP
+ 1028 000006CC BF00            NOP
+ 1029 000006CE BF00            NOP
+ 1030 000006D0 BF00            NOP
+ 1031 000006D2 BF00            NOP
+ 1032 000006D4 BF00            NOP
+ 1033 000006D6 BF00            NOP
+ 1034 000006D8 BF00            NOP
+ 1035 000006DA BF00            NOP
+ 1036 000006DC BF00            NOP
+ 1037 000006DE BF00            NOP
+ 1038 000006E0 BF00            NOP
+ 1039 000006E2 BF00            NOP
+ 1040 000006E4 BF00            NOP
+ 1041 000006E6 BF00            NOP
+ 1042 000006E8 BF00            NOP
+ 1043 000006EA BF00            NOP
+ 1044 000006EC BF00            NOP
+ 1045 000006EE BF00            NOP
+ 1046 000006F0 BF00            NOP
+ 1047 000006F2 BF00            NOP
+ 1048 000006F4 BF00            NOP
+ 1049 000006F6 BF00            NOP
+ 1050 000006F8 BF00            NOP
+ 1051 000006FA BF00            NOP
+ 1052 000006FC BF00            NOP
+ 1053 000006FE BF00            NOP
+ 1054 00000700 BF00            NOP
+ 1055 00000702 BF00            NOP
+ 1056 00000704 BF00            NOP
+ 1057 00000706 BF00            NOP
+ 1058 00000708 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 28 Controller.s
+
+
+ 1059 0000070A BF00            NOP
+ 1060 0000070C BF00            NOP
+ 1061 0000070E BF00            NOP
+ 1062 00000710 BF00            NOP
+ 1063 00000712 BF00            NOP
+ 1064 00000714 BF00            NOP
+ 1065 00000716 BF00            NOP
+ 1066 00000718 BF00            NOP
+ 1067 0000071A BF00            NOP
+ 1068 0000071C BF00            NOP
+ 1069 0000071E BF00            NOP
+ 1070 00000720 BF00            NOP
+ 1071 00000722 BF00            NOP
+ 1072 00000724 BF00            NOP
+ 1073 00000726 BF00            NOP
+ 1074 00000728 BF00            NOP
+ 1075 0000072A BF00            NOP
+ 1076 0000072C BF00            NOP
+ 1077 0000072E BF00            NOP
+ 1078 00000730 BF00            NOP
+ 1079 00000732 BF00            NOP
+ 1080 00000734 BF00            NOP
+ 1081 00000736 BF00            NOP
+ 1082 00000738 BF00            NOP
+ 1083 0000073A BF00            NOP
+ 1084 0000073C BF00            NOP
+ 1085 0000073E BF00            NOP
+ 1086 00000740 BF00            NOP
+ 1087 00000742 BF00            NOP
+ 1088 00000744 BF00            NOP
+ 1089 00000746 BF00            NOP
+ 1090 00000748 BF00            NOP
+ 1091 0000074A BF00            NOP
+ 1092 0000074C BF00            NOP
+ 1093 0000074E BF00            NOP
+ 1094 00000750 BF00            NOP
+ 1095 00000752 BF00            NOP
+ 1096 00000754 BF00            NOP
+ 1097 00000756 BF00            NOP
+ 1098 00000758 BF00            NOP
+ 1099 0000075A BF00            NOP
+ 1100 0000075C BF00            NOP
+ 1101 0000075E BF00            NOP
+
+
+
+ARM Macro Assembler    Page 29 Controller.s
+
+
+ 1102 00000760 BF00            NOP
+ 1103 00000762 BF00            NOP
+ 1104 00000764 BF00            NOP
+ 1105 00000766 BF00            NOP
+ 1106 00000768 BF00            NOP
+ 1107 0000076A BF00            NOP
+ 1108 0000076C BF00            NOP
+ 1109 0000076E BF00            NOP
+ 1110 00000770 BF00            NOP
+ 1111 00000772 BF00            NOP
+ 1112 00000774 BF00            NOP
+ 1113 00000776 BF00            NOP
+ 1114 00000778 BF00            NOP
+ 1115 0000077A BF00            NOP
+ 1116 0000077C BF00            NOP
+ 1117 0000077E BF00            NOP
+ 1118 00000780 BF00            NOP
+ 1119 00000782 BF00            NOP
+ 1120 00000784 BF00            NOP
+ 1121 00000786 BF00            NOP
+ 1122 00000788 BF00            NOP
+ 1123 0000078A BF00            NOP
+ 1124 0000078C BF00            NOP
+ 1125 0000078E BF00            NOP
+ 1126 00000790 BF00            NOP
+ 1127 00000792 BF00            NOP
+ 1128 00000794 BF00            NOP
+ 1129 00000796 BF00            NOP
+ 1130 00000798 BF00            NOP
+ 1131 0000079A BF00            NOP
+ 1132 0000079C BF00            NOP
+ 1133 0000079E BF00            NOP
+ 1134 000007A0 BF00            NOP
+ 1135 000007A2 BF00            NOP
+ 1136 000007A4 BF00            NOP
+ 1137 000007A6 BF00            NOP
+ 1138 000007A8 BF00            NOP
+ 1139 000007AA BF00            NOP
+ 1140 000007AC BF00            NOP
+ 1141 000007AE BF00            NOP
+ 1142 000007B0 BF00            NOP
+ 1143 000007B2 BF00            NOP
+ 1144 000007B4 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 30 Controller.s
+
+
+ 1145 000007B6 BF00            NOP
+ 1146 000007B8 BF00            NOP
+ 1147 000007BA BF00            NOP
+ 1148 000007BC BF00            NOP
+ 1149 000007BE BF00            NOP
+ 1150 000007C0 BF00            NOP
+ 1151 000007C2 BF00            NOP
+ 1152 000007C4 BF00            NOP
+ 1153 000007C6 BF00            NOP
+ 1154 000007C8 BF00            NOP
+ 1155 000007CA BF00            NOP
+ 1156 000007CC BF00            NOP
+ 1157 000007CE BF00            NOP
+ 1158 000007D0 BF00            NOP
+ 1159 000007D2 BF00            NOP
+ 1160 000007D4 BF00            NOP
+ 1161 000007D6 BF00            NOP
+ 1162 000007D8 BF00            NOP
+ 1163 000007DA BF00            NOP
+ 1164 000007DC BF00            NOP
+ 1165 000007DE BF00            NOP
+ 1166 000007E0 BF00            NOP
+ 1167 000007E2 BF00            NOP
+ 1168 000007E4 BF00            NOP
+ 1169 000007E6 BF00            NOP
+ 1170 000007E8 BF00            NOP
+ 1171 000007EA BF00            NOP
+ 1172 000007EC BF00            NOP
+ 1173 000007EE BF00            NOP
+ 1174 000007F0 BF00            NOP
+ 1175 000007F2 BF00            NOP
+ 1176 000007F4 BF00            NOP
+ 1177 000007F6 BF00            NOP
+ 1178 000007F8 BF00            NOP
+ 1179 000007FA BF00            NOP
+ 1180 000007FC BF00            NOP
+ 1181 000007FE BF00            NOP
+ 1182 00000800 BF00            NOP
+ 1183 00000802 BF00            NOP
+ 1184 00000804 BF00            NOP
+ 1185 00000806 BF00            NOP
+ 1186 00000808 BF00            NOP
+ 1187 0000080A BF00            NOP
+
+
+
+ARM Macro Assembler    Page 31 Controller.s
+
+
+ 1188 0000080C BF00            NOP
+ 1189 0000080E BF00            NOP
+ 1190 00000810 BF00            NOP
+ 1191 00000812 BF00            NOP
+ 1192 00000814 BF00            NOP
+ 1193 00000816 BF00            NOP
+ 1194 00000818 BF00            NOP
+ 1195 0000081A BF00            NOP
+ 1196 0000081C BF00            NOP
+ 1197 0000081E BF00            NOP
+ 1198 00000820 BF00            NOP
+ 1199 00000822 BF00            NOP
+ 1200 00000824 BF00            NOP
+ 1201 00000826 BF00            NOP
+ 1202 00000828 BF00            NOP
+ 1203 0000082A BF00            NOP
+ 1204 0000082C BF00            NOP
+ 1205 0000082E BF00            NOP
+ 1206 00000830 BF00            NOP
+ 1207 00000832 BF00            NOP
+ 1208 00000834 BF00            NOP
+ 1209 00000836 BF00            NOP
+ 1210 00000838 BF00            NOP
+ 1211 0000083A BF00            NOP
+ 1212 0000083C BF00            NOP
+ 1213 0000083E BF00            NOP
+ 1214 00000840 BF00            NOP
+ 1215 00000842 BF00            NOP
+ 1216 00000844 BF00            NOP
+ 1217 00000846 BF00            NOP
+ 1218 00000848 BF00            NOP
+ 1219 0000084A BF00            NOP
+ 1220 0000084C BF00            NOP
+ 1221 0000084E BF00            NOP
+ 1222 00000850 BF00            NOP
+ 1223 00000852 BF00            NOP
+ 1224 00000854 BF00            NOP
+ 1225 00000856 BF00            NOP
+ 1226 00000858 BF00            NOP
+ 1227 0000085A BF00            NOP
+ 1228 0000085C BF00            NOP
+ 1229 0000085E BF00            NOP
+ 1230 00000860 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 32 Controller.s
+
+
+ 1231 00000862 BF00            NOP
+ 1232 00000864 BF00            NOP
+ 1233 00000866 BF00            NOP
+ 1234 00000868 BF00            NOP
+ 1235 0000086A BF00            NOP
+ 1236 0000086C BF00            NOP
+ 1237 0000086E BF00            NOP
+ 1238 00000870 BF00            NOP
+ 1239 00000872 BF00            NOP
+ 1240 00000874 BF00            NOP
+ 1241 00000876 BF00            NOP
+ 1242 00000878 BF00            NOP
+ 1243 0000087A BF00            NOP
+ 1244 0000087C BF00            NOP
+ 1245 0000087E BF00            NOP
+ 1246 00000880 BF00            NOP
+ 1247 00000882 BF00            NOP
+ 1248 00000884 BF00            NOP
+ 1249 00000886 BF00            NOP
+ 1250 00000888 BF00            NOP
+ 1251 0000088A BF00            NOP
+ 1252 0000088C BF00            NOP
+ 1253 0000088E BF00            NOP
+ 1254 00000890 BF00            NOP
+ 1255 00000892 BF00            NOP
+ 1256 00000894 BF00            NOP
+ 1257 00000896 BF00            NOP
+ 1258 00000898 BF00            NOP
+ 1259 0000089A BF00            NOP
+ 1260 0000089C BF00            NOP
+ 1261 0000089E BF00            NOP
+ 1262 000008A0 BF00            NOP
+ 1263 000008A2 BF00            NOP
+ 1264 000008A4 BF00            NOP
+ 1265 000008A6 BF00            NOP
+ 1266 000008A8 BF00            NOP
+ 1267 000008AA BF00            NOP
+ 1268 000008AC BF00            NOP
+ 1269 000008AE BF00            NOP
+ 1270 000008B0 BF00            NOP
+ 1271 000008B2 BF00            NOP
+ 1272 000008B4 BF00            NOP
+ 1273 000008B6 BF00            NOP
+
+
+
+ARM Macro Assembler    Page 33 Controller.s
+
+
+ 1274 000008B8 BF00            NOP
+ 1275 000008BA BF00            NOP
+ 1276 000008BC BF00            NOP
+ 1277 000008BE BF00            NOP
+ 1278 000008C0 BF00            NOP
+ 1279 000008C2 BF00            NOP
+ 1280 000008C4 BF00            NOP
+ 1281 000008C6 BF00            NOP
+ 1282 000008C8 BF00            NOP
+ 1283 000008CA BF00            NOP
+ 1284 000008CC BF00            NOP
+ 1285 000008CE BF00            NOP
+ 1286 000008D0 BF00            NOP
+ 1287 000008D2 BF00            NOP
+ 1288 000008D4 BF00            NOP
+ 1289 000008D6 BF00            NOP
+ 1290 000008D8 BF00            NOP
+ 1291 000008DA BF00            NOP
+ 1292 000008DC BF00            NOP
+ 1293 000008DE BF00            NOP
+ 1294 000008E0 BF00            NOP
+ 1295 000008E2 BF00            NOP
+ 1296 000008E4 BF00            NOP
+ 1297 000008E6 BF00            NOP
+ 1298 000008E8 BF00            NOP
+ 1299 000008EA BF00            NOP
+ 1300 000008EC BF00            NOP
+ 1301 000008EE BF00            NOP
+ 1302 000008F0 BF00            NOP
+ 1303 000008F2 BF00            NOP
+ 1304 000008F4 BF00            NOP
+ 1305 000008F6 BF00            NOP
+ 1306 000008F8 BF00            NOP
+ 1307 000008FA BF00            NOP
+ 1308 000008FC BF00            NOP
+ 1309 000008FE BF00            NOP
+ 1310 00000900 BF00            NOP
+ 1311 00000902 BF00            NOP
+ 1312 00000904 BF00            NOP
+ 1313 00000906 BF00            NOP
+ 1314 00000908 BF00            NOP
+ 1315 0000090A BF00            NOP
+ 1316 0000090C BF00            NOP
+
+
+
+ARM Macro Assembler    Page 34 Controller.s
+
+
+ 1317 0000090E BF00            NOP
+ 1318 00000910 BF00            NOP
+ 1319 00000912 BF00            NOP
+ 1320 00000914 BF00            NOP
+ 1321 00000916 BF00            NOP
+ 1322 00000918 BF00            NOP
+ 1323 0000091A BF00            NOP
+ 1324 0000091C BF00            NOP
+ 1325 0000091E BF00            NOP
+ 1326 00000920 BF00            NOP
+ 1327 00000922 BF00            NOP
+ 1328 00000924 BF00            NOP
+ 1329 00000926 BF00            NOP
+ 1330 00000928 BF00            NOP
+ 1331 0000092A BF00            NOP
+ 1332 0000092C BF00            NOP
+ 1333 0000092E BF00            NOP
+ 1334 00000930 BF00            NOP
+ 1335 00000932 BF00            NOP
+ 1336 00000934 BF00            NOP
+ 1337 00000936 BF00            NOP
+ 1338 00000938 BF00            NOP
+ 1339 0000093A BF00            NOP
+ 1340 0000093C BF00            NOP
+ 1341 0000093E BF00            NOP
+ 1342 00000940 BF00            NOP
+ 1343 00000942 BF00            NOP
+ 1344 00000944 BF00            NOP
+ 1345 00000946 BF00            NOP
+ 1346 00000948 4770            BX               LR
+ 1347 0000094A         
+ 1348 0000094A 00 00           ALIGN
+ 1349 0000094C         
+ 1350 0000094C         
+ 1351 0000094C         ;------------------------------------------------------
+ 1352 0000094C         ;     Variables
+ 1353 0000094C         
+ 1354 0000094C                 AREA             Variables,DATA,READWRITE
+ 1355 00000000         
+ 1356 00000000         ;Begin variables
+ 1357 00000000         
+ 1358 00000000 00 00 00 
+              00       Count   SPACE            WORD        ;Allocate word to count PIT interrupts
+
+
+
+ARM Macro Assembler    Page 35 Controller.s
+
+
+ 1359 00000004 00 00   Clock   SPACE            HWORD       ;Allocate Half word for boolean as to whether
+ 1360 00000006         ;clock is high or low. 0 Will be False case,
+ 1361 00000006         ;Any other value will be True case
+ 1362 00000006         
+ 1363 00000006 00 00           ALIGN                        ;Word align
+ 1364 00000008         
+ 1365 00000008         
+ 1366 00000008         ;------------------------------------------------------
+ 1367 00000008         ;     Constants
+ 1368 00000008         
+ 1369 00000008                 AREA             Constants,DATA,READONLY
+ 1370 00000000         
+ 1371 00000000         ;Begin constants
+ 1372 00000000         
+ 1373 00000000                 ALIGN                        ;Word align
+ 1374 00000000         ;------------------------------------------------------
+ 1375 00000000                 END
+Command Line: --debug --xref --length=50 --width=120 --diag_suppress=9931 --cpu=Cortex-M0+ --apcs=interwork --depend=.\o
+bjects\controller_1.d -o.\objects\controller_1.o -I"C:\Users\John\Documents\Personal Projects\MotoController\MotoControl
+ler\RTE\_Target_1" -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0\CMSIS\Include -IC:\Keil_v5\ARM\PACK\Keil\Kinetis_KLxx_DFP\1.12.
+0\Device\Include --predefine="__EVAL SETA 1" --predefine="__UVISION_VERSION SETA 522" --predefine="_RTE_ SETA 1" --prede
+fine="MKL46Z256xxx4 SETA 1" --list=.\listings\controller.lst Controller.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+ControlLibrary 00000000
+
+Symbol: ControlLibrary
+   Definitions
+      At line 107 in file Controller.s
+   Uses
+      At line 109 in file Controller.s
+Comment: ControlLibrary used once
+PIT_IRQHandler 00000054
+
+Symbol: PIT_IRQHandler
+   Definitions
+      At line 209 in file Controller.s
+   Uses
+      At line 207 in file Controller.s
+Comment: PIT_IRQHandler used once
+PIT_ISR 00000054
+
+Symbol: PIT_ISR
+   Definitions
+      At line 208 in file Controller.s
+   Uses
+      None
+Comment: PIT_ISR unused
+Wait 000000A8
+
+Symbol: Wait
+   Definitions
+      At line 240 in file Controller.s
+   Uses
+      At line 239 in file Controller.s
+Comment: Wait used once
+endPIT_ISR 0000005E
+
+Symbol: endPIT_ISR
+   Definitions
+      At line 228 in file Controller.s
+   Uses
+      None
+Comment: endPIT_ISR unused
+initPITInterrupt 00000022
+
+Symbol: initPITInterrupt
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Relocatable symbols
+
+   Definitions
+      At line 153 in file Controller.s
+   Uses
+      At line 152 in file Controller.s
+Comment: initPITInterrupt used once
+initSPI 00000000
+
+Symbol: initSPI
+   Definitions
+      At line 115 in file Controller.s
+   Uses
+      At line 114 in file Controller.s
+Comment: initSPI used once
+7 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+Clock 00000004
+
+Symbol: Clock
+   Definitions
+      At line 1359 in file Controller.s
+   Uses
+      None
+Comment: Clock unused
+Count 00000000
+
+Symbol: Count
+   Definitions
+      At line 1358 in file Controller.s
+   Uses
+      At line 222 in file Controller.s
+Comment: Count used once
+Variables 00000000
+
+Symbol: Variables
+   Definitions
+      At line 1354 in file Controller.s
+   Uses
+      None
+Comment: Variables unused
+3 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+Constants 00000000
+
+Symbol: Constants
+   Definitions
+      At line 1369 in file Controller.s
+   Uses
+      None
+Comment: Constants unused
+1 symbol
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Absolute symbols
+
+ANALOG_MASK 01000000
+
+Symbol: ANALOG_MASK
+   Definitions
+      At line 86 in file Controller.s
+   Uses
+      None
+Comment: ANALOG_MASK unused
+ANALOG_OUT 00000000
+
+Symbol: ANALOG_OUT
+   Definitions
+      At line 85 in file Controller.s
+   Uses
+      At line 86 in file Controller.s
+Comment: ANALOG_OUT used once
+BAUD_MASK 00000022
+
+Symbol: BAUD_MASK
+   Definitions
+      At line 101 in file Controller.s
+   Uses
+      At line 134 in file Controller.s
+Comment: BAUD_MASK used once
+BYTE 00000001
+
+Symbol: BYTE
+   Definitions
+      At line 24 in file Controller.s
+   Uses
+      None
+Comment: BYTE unused
+C0_DACEN_VDDREF_HP 000000C0
+
+Symbol: C0_DACEN_VDDREF_HP
+   Definitions
+      At line 72 in file Controller.s
+   Uses
+      None
+Comment: C0_DACEN_VDDREF_HP unused
+C1_DMA_DISABLE 00000000
+
+Symbol: C1_DMA_DISABLE
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Absolute symbols
+
+   Definitions
+      At line 71 in file Controller.s
+   Uses
+      None
+Comment: C1_DMA_DISABLE unused
+C1_EN_MSTR 00000050
+
+Symbol: C1_EN_MSTR
+   Definitions
+      At line 100 in file Controller.s
+   Uses
+      At line 139 in file Controller.s
+Comment: C1_EN_MSTR used once
+C2_8BIT 00000000
+
+Symbol: C2_8BIT
+   Definitions
+      At line 99 in file Controller.s
+   Uses
+      At line 144 in file Controller.s
+Comment: C2_8BIT used once
+DAC0_BASE 4003F000
+
+Symbol: DAC0_BASE
+   Definitions
+      At line 64 in file Controller.s
+   Uses
+      At line 65 in file Controller.s
+      At line 66 in file Controller.s
+      At line 67 in file Controller.s
+      At line 68 in file Controller.s
+      At line 69 in file Controller.s
+      At line 70 in file Controller.s
+
+DAC0_C0 4003F021
+
+Symbol: DAC0_C0
+   Definitions
+      At line 68 in file Controller.s
+   Uses
+      None
+Comment: DAC0_C0 unused
+DAC0_C1 4003F022
+
+
+
+ARM Macro Assembler    Page 3 Alphabetic symbol ordering
+Absolute symbols
+
+
+Symbol: DAC0_C1
+   Definitions
+      At line 69 in file Controller.s
+   Uses
+      None
+Comment: DAC0_C1 unused
+DAC0_C2 4003F023
+
+Symbol: DAC0_C2
+   Definitions
+      At line 70 in file Controller.s
+   Uses
+      None
+Comment: DAC0_C2 unused
+DAC0_SR 4003F020
+
+Symbol: DAC0_SR
+   Definitions
+      At line 67 in file Controller.s
+   Uses
+      None
+Comment: DAC0_SR unused
+DAT0H 4003F001
+
+Symbol: DAT0H
+   Definitions
+      At line 66 in file Controller.s
+   Uses
+      None
+Comment: DAT0H unused
+DAT0L 4003F000
+
+Symbol: DAT0L
+   Definitions
+      At line 65 in file Controller.s
+   Uses
+      None
+Comment: DAT0L unused
+DATHL_LOW 00000000
+
+Symbol: DATHL_LOW
+   Definitions
+
+
+
+ARM Macro Assembler    Page 4 Alphabetic symbol ordering
+Absolute symbols
+
+      At line 74 in file Controller.s
+   Uses
+      None
+Comment: DATHL_LOW unused
+DATH_HIGH 0000000E
+
+Symbol: DATH_HIGH
+   Definitions
+      At line 75 in file Controller.s
+   Uses
+      None
+Comment: DATH_HIGH unused
+DATL_HIGH 000000FF
+
+Symbol: DATL_HIGH
+   Definitions
+      At line 76 in file Controller.s
+   Uses
+      None
+Comment: DATL_HIGH unused
+DEBUG_EN 00000001
+
+Symbol: DEBUG_EN
+   Definitions
+      At line 46 in file Controller.s
+   Uses
+      At line 173 in file Controller.s
+Comment: DEBUG_EN used once
+DWORD 00000008
+
+Symbol: DWORD
+   Definitions
+      At line 21 in file Controller.s
+   Uses
+      None
+Comment: DWORD unused
+EN_DAC 80000000
+
+Symbol: EN_DAC
+   Definitions
+      At line 41 in file Controller.s
+   Uses
+      None
+
+
+
+ARM Macro Assembler    Page 5 Alphabetic symbol ordering
+Absolute symbols
+
+Comment: EN_DAC unused
+EN_FIFO 00000001
+
+Symbol: EN_FIFO
+   Definitions
+      At line 102 in file Controller.s
+   Uses
+      None
+Comment: EN_FIFO unused
+EN_PIT 00800000
+
+Symbol: EN_PIT
+   Definitions
+      At line 40 in file Controller.s
+   Uses
+      At line 166 in file Controller.s
+Comment: EN_PIT used once
+EN_PTE 00001000
+
+Symbol: EN_PTE
+   Definitions
+      At line 34 in file Controller.s
+   Uses
+      None
+Comment: EN_PTE unused
+EN_TCTRL 00000003
+
+Symbol: EN_TCTRL
+   Definitions
+      At line 50 in file Controller.s
+   Uses
+      At line 182 in file Controller.s
+Comment: EN_TCTRL used once
+GPIO_MASK 01000100
+
+Symbol: GPIO_MASK
+   Definitions
+      At line 88 in file Controller.s
+   Uses
+      None
+Comment: GPIO_MASK unused
+GPIO_OUT 00000100
+
+
+
+
+ARM Macro Assembler    Page 6 Alphabetic symbol ordering
+Absolute symbols
+
+Symbol: GPIO_OUT
+   Definitions
+      At line 87 in file Controller.s
+   Uses
+      At line 88 in file Controller.s
+Comment: GPIO_OUT used once
+HWORD 00000002
+
+Symbol: HWORD
+   Definitions
+      At line 23 in file Controller.s
+   Uses
+      At line 1359 in file Controller.s
+Comment: HWORD used once
+INT_10ms 0003A97F
+
+Symbol: INT_10ms
+   Definitions
+      At line 48 in file Controller.s
+   Uses
+      At line 178 in file Controller.s
+Comment: INT_10ms used once
+ISF_MASK 01000000
+
+Symbol: ISF_MASK
+   Definitions
+      At line 84 in file Controller.s
+   Uses
+      At line 86 in file Controller.s
+      At line 88 in file Controller.s
+
+NVIC E000E100
+
+Symbol: NVIC
+   Definitions
+      At line 56 in file Controller.s
+   Uses
+      At line 59 in file Controller.s
+      At line 188 in file Controller.s
+
+PCR_30_OFFSET 00000078
+
+Symbol: PCR_30_OFFSET
+
+
+
+ARM Macro Assembler    Page 7 Alphabetic symbol ordering
+Absolute symbols
+
+   Definitions
+      At line 81 in file Controller.s
+   Uses
+      At line 83 in file Controller.s
+Comment: PCR_30_OFFSET used once
+PIT_BASE 40037000
+
+Symbol: PIT_BASE
+   Definitions
+      At line 45 in file Controller.s
+   Uses
+      At line 172 in file Controller.s
+Comment: PIT_BASE used once
+PIT_IPR E000E414
+
+Symbol: PIT_IPR
+   Definitions
+      At line 59 in file Controller.s
+   Uses
+      At line 193 in file Controller.s
+Comment: PIT_IPR used once
+PIT_IRQ_PRI 00000000
+
+Symbol: PIT_IRQ_PRI
+   Definitions
+      At line 60 in file Controller.s
+   Uses
+      At line 194 in file Controller.s
+Comment: PIT_IRQ_PRI used once
+PIT_LDVAL0 40037100
+
+Symbol: PIT_LDVAL0
+   Definitions
+      At line 47 in file Controller.s
+   Uses
+      At line 177 in file Controller.s
+      At line 198 in file Controller.s
+      At line 230 in file Controller.s
+
+PIT_MASK 00400000
+
+Symbol: PIT_MASK
+   Definitions
+
+
+
+ARM Macro Assembler    Page 8 Alphabetic symbol ordering
+Absolute symbols
+
+      At line 58 in file Controller.s
+   Uses
+      At line 189 in file Controller.s
+Comment: PIT_MASK used once
+PIT_PRI_POS 00000016
+
+Symbol: PIT_PRI_POS
+   Definitions
+      At line 57 in file Controller.s
+   Uses
+      At line 58 in file Controller.s
+      At line 60 in file Controller.s
+
+PORTE_BASE 4004C000
+
+Symbol: PORTE_BASE
+   Definitions
+      At line 80 in file Controller.s
+   Uses
+      At line 82 in file Controller.s
+      At line 83 in file Controller.s
+
+PTE_PCR0 4004C000
+
+Symbol: PTE_PCR0
+   Definitions
+      At line 82 in file Controller.s
+   Uses
+      None
+Comment: PTE_PCR0 unused
+PTE_PCR30 4004C078
+
+Symbol: PTE_PCR30
+   Definitions
+      At line 83 in file Controller.s
+   Uses
+      None
+Comment: PTE_PCR30 unused
+SIM_SCGC4 40048034
+
+Symbol: SIM_SCGC4
+   Definitions
+      At line 28 in file Controller.s
+
+
+
+ARM Macro Assembler    Page 9 Alphabetic symbol ordering
+Absolute symbols
+
+   Uses
+      At line 126 in file Controller.s
+Comment: SIM_SCGC4 used once
+SIM_SCGC5 40048038
+
+Symbol: SIM_SCGC5
+   Definitions
+      At line 33 in file Controller.s
+   Uses
+      None
+Comment: SIM_SCGC5 unused
+SIM_SCGC6 4004803C
+
+Symbol: SIM_SCGC6
+   Definitions
+      At line 39 in file Controller.s
+   Uses
+      At line 165 in file Controller.s
+Comment: SIM_SCGC6 used once
+SPI0_MASK 00400000
+
+Symbol: SPI0_MASK
+   Definitions
+      At line 29 in file Controller.s
+   Uses
+      At line 127 in file Controller.s
+Comment: SPI0_MASK used once
+SPI_BASE 40076000
+
+Symbol: SPI_BASE
+   Definitions
+      At line 92 in file Controller.s
+   Uses
+      At line 93 in file Controller.s
+      At line 94 in file Controller.s
+      At line 95 in file Controller.s
+      At line 96 in file Controller.s
+      At line 97 in file Controller.s
+      At line 98 in file Controller.s
+
+SPI_BAUD 40076001
+
+Symbol: SPI_BAUD
+
+
+
+ARM Macro Assembler    Page 10 Alphabetic symbol ordering
+Absolute symbols
+
+   Definitions
+      At line 93 in file Controller.s
+   Uses
+      At line 133 in file Controller.s
+Comment: SPI_BAUD used once
+SPI_C1 40076003
+
+Symbol: SPI_C1
+   Definitions
+      At line 95 in file Controller.s
+   Uses
+      At line 138 in file Controller.s
+Comment: SPI_C1 used once
+SPI_C2 40076002
+
+Symbol: SPI_C2
+   Definitions
+      At line 94 in file Controller.s
+   Uses
+      At line 143 in file Controller.s
+Comment: SPI_C2 used once
+SPI_C3 4007600B
+
+Symbol: SPI_C3
+   Definitions
+      At line 98 in file Controller.s
+   Uses
+      None
+Comment: SPI_C3 unused
+SPI_DH 40076007
+
+Symbol: SPI_DH
+   Definitions
+      At line 97 in file Controller.s
+   Uses
+      None
+Comment: SPI_DH unused
+SPI_DL 40076006
+
+Symbol: SPI_DL
+   Definitions
+      At line 96 in file Controller.s
+   Uses
+
+
+
+ARM Macro Assembler    Page 11 Alphabetic symbol ordering
+Absolute symbols
+
+      None
+Comment: SPI_DL unused
+TCTRL 00000008
+
+Symbol: TCTRL
+   Definitions
+      At line 49 in file Controller.s
+   Uses
+      At line 183 in file Controller.s
+Comment: TCTRL used once
+TFLG1 0000000C
+
+Symbol: TFLG1
+   Definitions
+      At line 51 in file Controller.s
+   Uses
+      At line 200 in file Controller.s
+      At line 232 in file Controller.s
+
+TFLG_CLR 00000001
+
+Symbol: TFLG_CLR
+   Definitions
+      At line 52 in file Controller.s
+   Uses
+      At line 199 in file Controller.s
+      At line 231 in file Controller.s
+
+WORD 00000004
+
+Symbol: WORD
+   Definitions
+      At line 22 in file Controller.s
+   Uses
+      At line 1358 in file Controller.s
+Comment: WORD used once
+56 symbols
+404 symbols in table
