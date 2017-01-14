@@ -15,6 +15,8 @@ extern void initGPIOLightDataOut(void);
 extern void initPITInterrupt(void);
 extern void initSPI(void);
 extern void Wait(void);
+extern void startFrame(void);
+extern void endFrame(void);
 
 /*					Lighting.s					*/
 extern void setColor(int Color);
