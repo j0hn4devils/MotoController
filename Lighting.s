@@ -25,7 +25,7 @@ WHITE		EQU 	0x00FFFFFF
 AMBER		EQU		0x00FFC200
 NOCOLOR		EQU		0x00000000
 	
-SHIFT		EQU  	0x08		;Shift value to shift over bytes
+SHIFT		EQU  	0x10		;Shift value to shift over bytes
 CHECKTRANS	EQU 	0x20		;Check if ready to send
 	
 ;-----------------------------------------------------
@@ -53,44 +53,34 @@ setColor	;Sends 1 LED frame to the SPI with specified color
 		;Load addresses
 		LDR		R1,=SPI_DL		;Load data output register
 		LDR		R2,=SPI_BASE	;Load the base, which is the status register
+	
+		;Mask Color value for LED frame
+		LDR		R3,=0xFF000000	;Load first byte of LED Frame
+		ORRS	R0,R0,R3		;Mask into LED Color value
+		
 		;Color transmission
-		;CPSID	I				;Critical code
-		
-		MOVS	R4,#0xFF		;1st bit of LED frame
-		LDRB	R3,[R2,#0]		;Must read before a write
-		STRB	R4,[R1,#0]		;Store new color
-		BL		checkTrans		;Wait until ready to transmiut
-		
-		
-		
 		;RGB value is reversed. Get the impl working, then fix with proper masking
 		
 		
-		;Transmit B
+		;Transmit Start and R
+		CPSID	I
+		LDRB	R3,[R2,#0]		;Must read before a write
+		STRH	R0,[R1,#0]		;Store new color
+		LSRS	R0,R0,#SHIFT	;Shift right 8 bits to get next portion of color code
+		CPSIE	I
+		BL		checkTrans		;Wait until ready to transmit
+		
+		;Transmit G and B
+		CPSID	I
 		LDRB	R3,[R2,#0]		;Must read before a write
 		STRB	R0,[R1,#0]		;Store new color
 		LSRS	R0,R0,#SHIFT	;Shift right 8 bits to get next portion of color code
-		BL		checkTrans		;Wait until ready to transmit
-		
-		;Transmit G
-		LDRB	R3,[R2,#0]		;Must read before a write
-		STRB	R0,[R1,#0]		;Store new color
-		LSRS	R0,R0,#SHIFT	;Shift right 8 bits to get next portion of color code
-		BL		checkTrans		;Wait until ready to transmit
-		
-		;Transmit R
-		LDRB	R3,[R2,#0]		;Must read before a write
-		STRB	R0,[R1,#0]		;Store new color
-		
-		;CPSIE	I				;End of Critical code
+		CPSIE	I
 		
 		;Restore and return
 		POP		{R1-R4,PC}
 
 	
-
-
-
 
 		EXPORT	startFrame
 startFrame
@@ -103,7 +93,7 @@ startFrame
 		PUSH	{R0-R4,LR}
 		
 		;Move 0 to R0 as data and R1 as counter
-		MOVS	R0,#0
+		LDR 	R0,=0x00000000
 		MOVS	R1,#0
 		
 		;Load DL and BASE for SPI in R2 and R3
@@ -112,11 +102,11 @@ startFrame
 		
 		;Loop
 startLoop	
-		CMP		R1,#4		;Check if Counter has reached 4
-		BEQ		Endit		;If Counter ==4, End
+		CMP		R1,#2		;Check if Counter has reached 2
+		BEQ		Endit		;If Counter ==2, End
 		BL		checkTrans	;Check if ready for transmit
 		LDRB	R4,[R3,#0]	;Load Status register values (to write)
-		STRB	R0,[R2,#0]	;Store bits at DL
+		STRH	R0,[R2,#0]	;Store bits at DH
 		ADDS	R1,#1		;Increment counter
 		B		startLoop	;Loop
 		
@@ -139,7 +129,7 @@ endFrame
 		PUSH	{R0-R4,LR}
 		
 		;Move FF to R0 and instantiate counter in R1
-		MOVS	R0,#0xFF
+		LDR		R0,=0xFFFFFFFF
 		MOVS	R1,#0
 		
 		;Load the DL and Base SPI addresses
@@ -147,11 +137,11 @@ endFrame
 		LDR		R3,=SPI_BASE
 		
 		;Transfer loop
-endloop	CMP		R1,#4		;Check if Counter == 4
+endloop	CMP		R1,#2		;Check if Counter == 4
 		BEQ		Endite		;If true, end loop
 		BL		checkTrans	;Check if ready to transfer
 		LDRB	R4,[R3,#0]	;Load status register (to write)
-		STRB	R0,[R2,#0]	;Send data out SPI DL
+		STRH	R0,[R2,#0]	;Send data out SPI DL
 		ADDS	R1,#1		;Increment counter
 		B		endloop		;Loop
 		
