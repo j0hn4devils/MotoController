@@ -37,24 +37,48 @@ int main(void)
 	/*Main is currently being used to test features as they are being developed*/
 	for(;;)
 	{
-		startFrame();
-		startFrame();
-		setColor(WHITE);
-		setColor(WHITE);
-		setColor(WHITE);
-		setColor(WHITE);
-		setColor(WHITE);
-		setColor(WHITE);
-		setColor(WHITE);
-		setColor(WHITE);
-		setColor(WHITE);
-		setColor(WHITE);
-		setColor(WHITE);
-		setColor(WHITE);
-		setColor(AMBER);
-		endFrame();
-		endFrame();
+		turnPattern(144);
 	}
 
 	return 0;
+}
+
+/*turnPattern*/
+/*Displays the turning pattern to the LED strip selected by microcontroller*/
+/*Input: Number of LEDs in strip*/
+/*Output: LED Strip Colors*/
+
+void turnPattern(int NumLED)
+{
+	int a = 0;
+	int loop = 0;
+	int setAmber = (NumLED/3)*2 /*Set 2/3 LEDS to Amber*/
+
+
+	/*Infinite loop as placeholder*/
+	/*Will be replaced with while (var == TRUE)*/
+  for(;;)
+	{
+		startFrame();
+		startFrame();
+		for(a = 0; a<= NumLED; a++)
+		{
+			if (loop <= a < setAmber)
+			{
+				setColor(AMBER);
+			}
+			else
+			{
+				setColor(WHITE);
+			}
+		}
+		endFrame();
+		endFrame();
+		loop++;
+		if loop == (setAmber + NumLED)
+		{
+			loop =0;
+		}
+
+	}
 }
