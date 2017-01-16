@@ -8,7 +8,6 @@ typedef int Int32;
 typedef short int Int16;
 typedef char	int8;
 typedef unsigned int UInt32;
-typedef bool UInt8;
 
 
 /*         Controller.s         */
@@ -19,3 +18,5 @@ extern void wait(int ms);
 
 /*					Lighting.s					*/
 extern void setColor(int Color);
+extern void startFrame(void);
+extern void endFrame(void);

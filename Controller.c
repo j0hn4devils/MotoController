@@ -14,16 +14,6 @@
 #define AMBER	(0x00FFC200u)
 #define	NOCOLOR	(0x00000000u)
 
-/* 									DAC 								*/
-#define EN_PTE	(0x00001000u)
-#define EN_DAC	(0x80000000u)
-#define DAC0_OUT (0x01000000u)
-#define BUF_DISABLE (0x00u)
-#define EN_C0 (0xC0u)
-#define DATH_MIN (0x00u)
-#define DATL_MIN (0x00u)
-#define SIM (0x40047000u)
-#define SCGC6 (0x103Cu)
 /*								  Code								*/
 
 /*Main code; runs on startup*/
@@ -47,11 +37,23 @@ int main(void)
 	/*Main is currently being used to test features as they are being developed*/
 	for(;;)
 	{
-		/*Cycle through colors*/=
+		startFrame();
+		startFrame();
 		setColor(WHITE);
-		wait(1000);
+		setColor(WHITE);
+		setColor(WHITE);
+		setColor(WHITE);
+		setColor(WHITE);
+		setColor(WHITE);
+		setColor(WHITE);
+		setColor(WHITE);
+		setColor(WHITE);
+		setColor(WHITE);
+		setColor(WHITE);
+		setColor(WHITE);
 		setColor(AMBER);
-		wait(1000);
+		endFrame();
+		endFrame();
 	}
 
 	return 0;

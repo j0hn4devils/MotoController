@@ -79,10 +79,14 @@ SPI_C1		EQU (SPI_BASE + 0x03)
 SPI_DL		EQU	(SPI_BASE + 0x06)
 SPI_DH		EQU	(SPI_BASE + 0x07)
 SPI_C3		EQU	(SPI_BASE + 0x0B)
-C2_8BIT		EQU	0x00		;Mask for C2 to ensure 8 bit mode
+C2_16BIT	EQU	0x40		;Mask for C2 to ensure 8 bit mode
 C1_EN_MSTR	EQU	0x50		;Enables SPI and initalizes as master device
 BAUD_MASK	EQU 0x22		;Mask for baud register
 EN_FIFO		EQU	0x01		;Enables 64 bit FIFO
+PTA15PCR	EQU	0x4004903C
+PCR15CLKMASK	EQU 0x01000200
+PTA16PCR		EQU 0x40049040
+PCR16DATAMASK	EQU 0x01000200
 
 ;-----------------------------------------------------
 ; 					Define Library
@@ -106,25 +110,37 @@ initSPI
 		PUSH	{R0-R2}		;No LR; Faster implementation
 
 		;Enable module in SCGC4
-		LDR	R0,=SIM_SCGC4	;Load SCGC4 address
-		LDR	R1,=SPI0_MASK	;Load mask to enable clock
-		LDR	R2,[R0,#0]	;Load current SCGC4 value (don't disable other modules)
+		LDR		R0,=SIM_SCGC4	;Load SCGC4 address
+		LDR		R1,=SPI0_MASK	;Load mask to enable clock
+		LDR		R2,[R0,#0]	;Load current SCGC4 value (don't disable other modules)
 		ORRS	R2,R2,R1	;Or in the mask to enable SPI0
-		STR	R2,[R0,#0]	;Store new value at SCGC4
-
+		STR		R2,[R0,#0]	;Store new value at SCGC4
+		
+		;Map SPI0 Output to Pins PTA15 (CLK) and PTA16 (MOSI)
+		
+		LDR		R0,=PTA15PCR	;Load PTA15PCR address
+		LDR		R1,=PCR15CLKMASK;Load Mask
+		STR		R1,[R0,#0]		;Store mask
+		
+		;Repeat process for PTA16
+		
+		LDR		R0,=PTA16PCR
+		LDR		R1,=PCR16DATAMASK
+		STR		R1,[R0,#0]
+		
 		;Set the BAUD rate
-		LDR	R0,=SPI_BAUD	;Load the BAUD rate register
+		LDR		R0,=SPI_BAUD	;Load the BAUD rate register
 		MOVS	R1,#BAUD_MASK	;Load the mask for desired BAUD rate
 		STRB	R1,[R0,#0]	;Store the new baud rate
 
 		;Control register 1 initalizations
-		LDR	R0,=SPI_C1	;Load C1 address
+		LDR		R0,=SPI_C1	;Load C1 address
 		MOVS	R1,#C1_EN_MSTR	;Load mask to enable SPI0 as a master device
 		STRB	R1,[R0,#0]	;Store mask at C1
 
 		;Control register 2 initializations
-		LDR	R0,=SPI_C2	;Load C2 address
-		MOVS	R1,#C2_8BIT	;Load mask to ensure 8 bit operation
+		LDR		R0,=SPI_C2	;Load C2 address
+		MOVS	R1,#C2_16BIT	;Load mask to ensure 8 bit operation
 		STRB	R1,[R0,#0]	;Store mask at C2
 
 		;Restore and return
@@ -228,13 +244,13 @@ wait
 			PUSH		{R1-R2}
 
 initTimer
-			CPSID		I		;Disable interrupts (PIT)
+			CPSID	I		;Disable interrupts (PIT)
 			LDR		R1,=Count	;Load count address
-			MOVS		R2,#0		;Move 0 to R2
+			MOVS	R2,#0		;Move 0 to R2
 			STR		R2,[R1,#0]	;Store 0 as new count
-			CPSIE		I		;Enable interrupts (PIT)
+			CPSIE	I		;Enable interrupts (PIT)
 
-timeLoop		LDR		R2,[R1,#0]	;Load count value
+timeLoop	LDR		R2,[R1,#0]	;Load count value
 			CMP		R2,R0		;Compare R2 to desired time value
 			BLT		timeLoop	;While Count < desired time, loop
 
