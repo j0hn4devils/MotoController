@@ -12,6 +12,7 @@
 /*								Colors								*/
 #define WHITE	(0x00FFFFFEu)
 #define AMBER	(0x00FFC200u)
+#define CurrAMBER (0x00FFB5Fe)
 #define	NOCOLOR	(0x00000000u)
 
 /*								  Code								*/
@@ -27,13 +28,22 @@ void turnPattern(int NumLED)
 	int a = 0;
 	int loop = 0;
 	int setAmber = ((NumLED/3)*2); /*Set 2/3 LEDS to Amber*/
-	unsigned int Color = AMBER;
+	unsigned int Color = WHITE;
 
 	/*Infinite loop as placeholder*/
 	/*Will be replaced with while (var == TRUE)*/
   for(;;)
 	{
-		Color --;
+		if (Color >= 0x00FFFFFF)
+		{Color = WHITE;}
+		else if (Color >=0x0000FFFF)
+		{Color -= 0x00010000;}
+		else if (Color >= 0x000000FF)
+		{Color -= 0x00000100;}
+		else if (Color >= 1)
+		{Color--;}
+		else
+		{Color = WHITE;}
 		startFrame();
 		startFrame();
 		for(a = 0; a<= NumLED; a++)
