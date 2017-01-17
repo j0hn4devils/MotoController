@@ -26,40 +26,39 @@
 void turnPattern(int NumLED)
 {
 	int a = 0;
+	int b = 0;
+	int c = 0;
 	int loop = 0;
+	int deficit = 0;
 	int setAmber = ((NumLED/3)*2); /*Set 2/3 LEDS to Amber*/
-	unsigned int Color = WHITE;
 
 	/*Infinite loop as placeholder*/
 	/*Will be replaced with while (var == TRUE)*/
   for(;;)
 	{
-		if (Color >= 0x00FFFFFF)
-		{Color = WHITE;}
-		else if (Color >=0x0000FFFF)
-		{Color -= 0x00010000;}
-		else if (Color >= 0x000000FF)
-		{Color -= 0x00000100;}
-		else if (Color >= 1)
-		{Color--;}
-		else
-		{Color = WHITE;}
 		startFrame();
 		startFrame();
 		for(a = 0; a<= NumLED; a++)
 		{
-			/*
-			if (loop <= a < setAmber)
-			{
-				setColor(AMBER);
-			}
-			else
+			for(c=deficit; c >0; c--)
 			{
 				setColor(NOCOLOR);
 			}
-			*/
-			setColor(Color);
-			
+			for (b = 0; b <= loop; b++)
+			{
+				if (b <= setAmber)
+				{
+					setColor(AMBER);
+				}
+			}
+			if (a<NumLED)
+			{
+				deficit++;
+				if (deficit > NumLED)
+				{
+					deficit = 0;
+				}
+			}
 		}
 		startFrame();
 		startFrame();
