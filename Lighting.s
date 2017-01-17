@@ -67,6 +67,7 @@ setColor	;Sends 1 LED frame to the SPI with specified color
 		;Unknown if RGB transmission is in correct order
 		
 		;Transmit Start and R
+		BL		checkTrans		;Testing to see if issue arises with not checking on first transfer
 		CPSID	I
 		LDRB	R3,[R2,#0]		;Must read before a write
 		STRH	R4,[R1,#0]		;Store new color
@@ -76,8 +77,9 @@ setColor	;Sends 1 LED frame to the SPI with specified color
 
 		;Transmit G and B
 		CPSID	I
+		MOVS	R3,#0
 		LDRB	R3,[R2,#0]		;Must read before a write
-		STRB	R0,[R1,#0]		;Store new color
+		STRH	R0,[R1,#0]		;Store new color
 		CPSIE	I
 		
 		;Restore and return
