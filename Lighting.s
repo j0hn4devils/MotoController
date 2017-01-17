@@ -22,7 +22,7 @@ SPI_DH		EQU		0x40076007
 SPI_BASE	EQU		0x40076000
 ;The following equates are the hex codes for the colors
 WHITE		EQU 	0x00FFFFFF
-AMBER		EQU		0x00FF00FF
+AMBER		EQU		0x00FFC200
 NOCOLOR		EQU		0x00000000
 	
 SHIFT		EQU  	0x10		;Shift value to shift over bytes
@@ -55,18 +55,21 @@ setColor	;Sends 1 LED frame to the SPI with specified color
 		LDR		R2,=SPI_BASE	;Load the base, which is the status register
 	
 		;Mask Color value for LED frame
-		LDR		R3,=0xF9000000	;Load first byte of LED Frame
+		LDR		R3,=0xFF000000	;Load first byte of LED Frame
 		ORRS	R0,R0,R3		;Mask into LED Color value
 		
-		;Color transmission
-		;RGB value is reversed. Get the impl working, then fix with proper masking
+		;Copy color to R4 for proper output
 		
+		MOVS	R4,R0			;Copy Color Value
+		LSRS	R4,#SHIFT		;Shift right by half work
+		
+		;Color transmission
+		;Unknown if RGB transmission is in correct order
 		
 		;Transmit Start and R
 		CPSID	I
 		LDRB	R3,[R2,#0]		;Must read before a write
-		STRH	R0,[R1,#0]		;Store new color
-		LSRS	R0,R0,#SHIFT	;Shift right 16 bits to get next portion of color code
+		STRH	R4,[R1,#0]		;Store new color
 		CPSIE	I
 		BL		checkTrans		;Wait until ready to transmit
 		
@@ -75,7 +78,6 @@ setColor	;Sends 1 LED frame to the SPI with specified color
 		CPSID	I
 		LDRB	R3,[R2,#0]		;Must read before a write
 		STRB	R0,[R1,#0]		;Store new color
-		LSRS	R0,R0,#SHIFT	;Shift right 16 bits to get next portion of color code
 		CPSIE	I
 		
 		;Restore and return
