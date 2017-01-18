@@ -1,7 +1,7 @@
 /*Controller.c*/
 /*Uses ASM Libraries to perform desired functions*/
 /*Written by: John DeBrino*/
-/*Revision Date: 12/26/2016*/
+/*Revision Date: 1/17/2016*/
 
 /*								Includes							*/
 #include "Controller.h"
@@ -10,9 +10,9 @@
 #define LED_STRIP_SIZE	30 /* # of LEDs in strip */
 
 /*								Colors								*/
+/*						 (BGR Values)							*/
 #define WHITE	(0x00FFFFFEu)
-#define AMBER	(0x00FFC200u)
-#define CurrAMBER (0x00FFB5Fe)
+#define AMBER	(0x0000C2FFu)
 #define	NOCOLOR	(0x00000000u)
 
 /*								  Code								*/
@@ -28,9 +28,9 @@ void turnPattern(int NumLED)
 	int a = 0;
 	int b = 0;
 	int c = 0;
-	int loop = 0;
+	int loop = 1;
 	int deficit = 0;
-	int setAmber = ((NumLED/3)*2); /*Set 2/3 LEDS to Amber*/
+	int setamber = (NumLED/2); /*Set 1/2 LEDS to Amber*/
 
 	/*Infinite loop as placeholder*/
 	/*Will be replaced with while (var == TRUE)*/
@@ -38,36 +38,36 @@ void turnPattern(int NumLED)
 	{
 		startFrame();
 		startFrame();
-		for(a = 0; a<= NumLED; a++)
-		{
-			for(c=deficit; c >0; c--)
+		/*Set entire strip*/
+		
+			for (b = deficit; b > 0; b--)
 			{
 				setColor(NOCOLOR);
 			}
-			for (b = 0; b <= loop; b++)
+			for (c = 0; c <= loop; c++)
 			{
-				if (b <= setAmber)
+				if (c <= setamber)
 				{
 					setColor(AMBER);
 				}
-			}
-			if (a<NumLED)
-			{
-				deficit++;
-				if (deficit > NumLED)
+				else
 				{
-					deficit = 0;
+					deficit++;
+					if (deficit >= NumLED)
+					{
+						deficit =0;
+					}
 				}
 			}
-		}
+		
 		startFrame();
 		startFrame();
 		startFrame();
 		startFrame();
 		loop++;
-		if (loop == (setAmber + NumLED))
+		if (loop >= (setamber + NumLED))
 		{
-			loop =0;
+			loop = 1;
 		}
 
 	}

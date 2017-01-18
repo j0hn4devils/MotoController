@@ -3,7 +3,7 @@
 ;Lighting controls library NXP MKL46256XXXX
 ;Written by John DeBrino
 ;Sources referrenced: Roy Melton (CMPE-250 Professor)
-;Revision Date: 12/26/2016
+;Revision Date: 1/17/2016
 
 ;-----------------------------------------------------
 ;		  Assembler Directives and Includes
@@ -22,7 +22,7 @@ SPI_DH		EQU		0x40076007
 SPI_BASE	EQU		0x40076000
 ;The following equates are the hex codes for the colors
 WHITE		EQU 	0x00FFFFFF
-AMBER		EQU		0x00FFC200
+AMBER		EQU		0x0000C2FF
 NOCOLOR		EQU		0x00000000
 	
 SHIFT		EQU  	0x10		;Shift value to shift over bytes
@@ -43,7 +43,7 @@ CHECKTRANS	EQU 	0x20		;Check if ready to send
 			
 		EXPORT setColor
 setColor	;Sends 1 LED frame to the SPI with specified color
-			;Input: Color in R0
+			;Input: Color in R0 (BGR Value)
 			;Output: Data sent through SPI
 			;Regmod: R0 (Data need not be preserved)
 			
@@ -66,7 +66,7 @@ setColor	;Sends 1 LED frame to the SPI with specified color
 		;Color transmission
 		;Unknown if RGB transmission is in correct order
 		
-		;Transmit Start and R
+		;Transmit Start and B
 		BL		checkTrans		;Testing to see if issue arises with not checking on first transfer
 		CPSID	I
 		LDRB	R3,[R2,#0]		;Must read before a write
@@ -75,7 +75,7 @@ setColor	;Sends 1 LED frame to the SPI with specified color
 		BL		checkTrans		;Wait until ready to transmit
 		
 
-		;Transmit G and B
+		;Transmit G and R
 		CPSID	I
 		MOVS	R3,#0
 		LDRB	R3,[R2,#0]		;Must read before a write
