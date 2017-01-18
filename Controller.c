@@ -25,51 +25,55 @@
 
 void turnPattern(int NumLED)
 {
-	int a = 0;
-	int b = 0;
-	int c = 0;
-	int loop = 1;
-	int deficit = 0;
-	int setamber = (NumLED/2); /*Set 1/2 LEDS to Amber*/
+	int b = 0; 				/*Loop counter for deficit loop*/
+	int c = 0; 				/*Loop counter for amber loop*/
+	int loop = 1; 		/*Loop counter for main loop*/
+	int deficit = 0; /*Number of LEDS to set to NOCOLOR at beginning of transmission*/
+	int setamber = (NumLED/2 + NumLED/4); /*Set 3/4 LEDS to Amber*/
 
+	/*Set baud for appropriate speed*/
+	setSPIBaud(0x33);
+	
 	/*Infinite loop as placeholder*/
 	/*Will be replaced with while (var == TRUE)*/
   for(;;)
 	{
-		startFrame();
-		startFrame();
-		/*Set entire strip*/
 		
-			for (b = deficit; b > 0; b--)
-			{
-				setColor(NOCOLOR);
-			}
-			for (c = 0; c <= loop; c++)
-			{
-				if (c <= setamber)
-				{
-					setColor(AMBER);
-				}
-				else
-				{
-					deficit++;
-					if (deficit >= NumLED)
-					{
-						deficit =0;
-					}
-				}
-			}
+		/*Transmit a start frame*/
+		startFrame();
 		
-		startFrame();
-		startFrame();
-		startFrame();
+		/*Loop LEDS to recieve no color*/
+		/*Reset deficit to 0*/
+		for (deficit; deficit > 0; deficit--)
+		{
+			setColor(NOCOLOR);
+		}
+			
+		/*Loop LEDS to recieve amber color, set deficit*/
+		for (c = 0; c <= loop; c++)
+		{
+			if (c <= setamber)
+			{
+				setColor(AMBER);
+			}
+			else
+			{
+				deficit++;
+				if (deficit > NumLED)
+				{
+					deficit =0;
+				}
+			}
+		}
+			
+		/*Transmit start frame as end frame, as APA102 Protocol doesn't differentiate*/
+		/*an end frame from a white color transfer*/
 		startFrame();
 		loop++;
-		if (loop >= (setamber + NumLED))
+		if (loop > (setamber + NumLED))
 		{
 			loop = 1;
 		}
-
 	}
 	return;
 }

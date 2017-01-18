@@ -11,12 +11,13 @@ typedef unsigned int UInt32;
 
 
 /*         Controller.s         */
-extern void initGPIOLightDataOut(void);
-extern void initPITInterrupt(void);
-extern void initSPI(void);
-extern void wait(int ms);
+void initGPIOLightDataOut(void);
+void initPITInterrupt(void);
+void initSPI(void);
+void wait(int ms);
+void setSPIBaud(int BaudRate);
 
 /*					Lighting.s					*/
-extern void setColor(int Color);
-extern void startFrame(void);
-extern void endFrame(void);
+void setColor(int Color);
+void startFrame(void);
+void endFrame(void);

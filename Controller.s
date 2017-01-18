@@ -81,13 +81,12 @@ SPI_DH		EQU	(SPI_BASE + 0x07)
 SPI_C3		EQU	(SPI_BASE + 0x0B)
 C2_16BIT	EQU	0x40		;Mask for C2 to ensure 8 bit mode
 C1_EN_MSTR	EQU	0x50		;Enables SPI and initalizes as master device
-BAUD_MASK	EQU 0x44		;Mask for baud register
+BAUD_MASK	EQU 0x33		;Mask for baud register
 EN_FIFO		EQU	0x01		;Enables 64 bit FIFO
 PTA15PCR	EQU	0x4004903C
 PCR15CLKMASK	EQU 0x01000200
 PTA16PCR		EQU 0x40049040
 PCR16DATAMASK	EQU 0x01000200
-
 ;-----------------------------------------------------
 ; 					Define Library
 
@@ -260,6 +259,21 @@ timeLoop	LDR		R2,[R1,#0]	;Load count value
 			ALIGN
 
 
+			EXPORT setSPIBaud
+setSPIBaud	;Subroutine sets the baud rate for the SPI
+			;Inputs: Baud rate in R0
+			;Output: Baud rate is set
+			;Regmod: None
+			
+			PUSH	{R1}
+			LDR		R1,=SPI_BAUD
+			STRB	R0,[R1,#0]
+			POP		{R1}
+			BX		LR
+			
+			
+			
+			
 ;------------------------------------------------------
 ;					Variables
 
