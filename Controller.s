@@ -2,7 +2,7 @@
 ;-----------------------------------------------------
 ;Initialize background tasks (UART,TPM,etc)
 ;Written by John DeBrino
-;Sources referrenced: Roy Melton (CMPE-250 Professor)
+;Sources referrenced: Roy Melton
 ;Revision Date: 1/17/2016
 ;-----------------------------------------------------
 ;		  Assembler Directives and Includes
@@ -322,6 +322,10 @@ setTrue		MOVS	R1,#FALSE
 			B		clearPTAInt
 setFalse	MOVS	R1,#TRUE
 			STRB	R1,[R0,#0]
+			
+			;Read ISF and Decode Turn signal out via Hardware decoder 
+			;(use other port A pins for this function to reduce power use)
+			
 clearPTAInt ;----------Code-----------;
 			BX		LR
 			

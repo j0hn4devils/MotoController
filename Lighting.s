@@ -2,7 +2,7 @@
 ;-----------------------------------------------------
 ;Lighting controls library NXP MKL46256XXXX
 ;Written by John DeBrino
-;Sources referrenced: Roy Melton (CMPE-250 Professor)
+;Sources referrenced: Roy Melton
 ;Revision Date: 1/17/2016
 
 ;-----------------------------------------------------
