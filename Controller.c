@@ -18,11 +18,6 @@
 
 /*								  Code								*/
 
-
-
-
-
-
 /*Main code; runs on startup*/
 int main(void)
 {

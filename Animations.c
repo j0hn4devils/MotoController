@@ -120,7 +120,3 @@ void slidePattern(int NumLED)
 		setColor(NOCOLOR);
 	}
 }
-
-
-
-

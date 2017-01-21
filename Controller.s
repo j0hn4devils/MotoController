@@ -18,20 +18,23 @@ MIXED_ASM_C SETL {TRUE}
 
 ;General
 ;Sizes are in multiples of 8 bits
-DWORD		EQU 	8			;Double word size
-WORD		EQU 	4			;Word size
-HWORD		EQU		2			;Half word size
-BYTE		EQU 	1			;Byte size
+DWORD		EQU 8			;Double word size
+WORD		EQU 4			;Word size
+HWORD		EQU	2			;Half word size
+BYTE		EQU 1			;Byte size
+TRUE		EQU	1			;True boolean
+FALSE		EQU	0			;False boolean
 
 
 ;						SCGC4
-SIM_SCGC4	EQU 	0x40048034		;SCGC4 Absolute address
-SPI0_MASK	EQU	0x00400000		;Mask to enable SPI
+SIM_SCGC4	EQU 0x40048034	;SCGC4 Absolute address
+SPI0_MASK	EQU	0x00400000	;Mask to enable SPI
 
 
 ;						SCGC5
 SIM_SCGC5	EQU	0x40048038	;Absolute Address of SCGC5 Module
-EN_PTE		EQU	0x00001000	;Mask to enable PORT E in SCGC5
+EN_PTE		EQU	0x00001000	;Mask to enable PORT E 
+EN_PTA		EQU	0x00000200	;Mask to enable PORT A
 
 
 ;						SCGC6
@@ -55,21 +58,10 @@ TFLG_CLR	EQU	0x00000001	;Mask to clear timer interrupt (w1c)
 NVIC		EQU	0xE000E100	;Interrupt controller base address
 PIT_PRI_POS	EQU	0x16		;Pit Priority position
 PIT_MASK	EQU	(1 << PIT_PRI_POS)	;PIT IRQ Priority mask (Roy W Melton)
-PIT_IPR		EQU 	(NVIC + 0x314) 		;IPR5 offset
+PIT_IPR		EQU (NVIC + 0x314) 		;IPR5 offset
 PIT_IRQ_PRI	EQU	(0 << PIT_PRI_POS)	;Set PIT Priority to 0 (highest priority)
-
-
-;						PORTE
-PORTE_BASE	EQU 	0x4004C000			;Base for port E
-PCR_30_OFFSET	EQU	0x78				;Offset for PCR30
-PTE_PCR0	EQU	PORTE_BASE			;PCR 0 located at base
-PTE_PCR30	EQU 	(PORTE_BASE + PCR_30_OFFSET);PCR 30
-ISF_MASK	EQU 	0x01000000			;Mask to clear ISF (w1c)
-ANALOG_OUT	EQU 	0x00000000			;Mask to multiplex analog output
-ANALOG_MASK	EQU 	(ISF_MASK :OR: ANALOG_OUT)	;Mask to fully enable analog out
-GPIO_OUT	EQU 	0x00000100			;Mask to muliplex GPIO Output
-GPIO_MASK	EQU	(ISF_MASK :OR: GPIO_OUT)	;Mask to fully enable GPIO out
-
+PTA_IPR		EQU	(NVIC + 0x31C)		;IPR 7 Offset?
+PTA_IRQ_PRI	EQU 0x00010000	;Mask to give priority of 1 (just below PIT)
 
 ;						 SPI
 SPI_BASE	EQU	0x40076000
@@ -79,14 +71,20 @@ SPI_C1		EQU (SPI_BASE + 0x03)
 SPI_DL		EQU	(SPI_BASE + 0x06)
 SPI_DH		EQU	(SPI_BASE + 0x07)
 SPI_C3		EQU	(SPI_BASE + 0x0B)
-C2_16BIT	EQU	0x40		;Mask for C2 to ensure 8 bit mode
+C2_16BIT	EQU	0x40		;Mask for C2 to enable 16 bit mode
 C1_EN_MSTR	EQU	0x50		;Enables SPI and initalizes as master device
 BAUD_MASK	EQU 0x33		;Mask for baud register
 EN_FIFO		EQU	0x01		;Enables 64 bit FIFO
-PTA15PCR	EQU	0x4004903C
+PTA15PCR	EQU	0x4004903C	
 PCR15CLKMASK	EQU 0x01000200
 PTA16PCR		EQU 0x40049040
 PCR16DATAMASK	EQU 0x01000200
+	
+;						Port A
+PTA_PCR_4	EQU 0x40049010	
+PTA_PCR_5	EQU	0x40049014
+PTA_INT_MASK	EQU 0x010B0000
+
 ;-----------------------------------------------------
 ; 					Define Library
 
@@ -163,7 +161,7 @@ initPITInterrupt
 		LDR		R0,=SIM_SCGC6	;Load SCGC6 base
 		LDR		R1,=EN_PIT		;Load mask to enable PIT
 		LDR		R2,[R0,#0]		;Load current SCGC6 value
-		ORRS		R2,R2,R1		;Or in the mask
+		ORRS	R2,R2,R1		;Or in the mask
 		STR		R2,[R0,#0]		;Store new SCGC6 value
 
 		;Disable timer when in debug mode
@@ -184,7 +182,7 @@ initPITInterrupt
 
 		;Unmask Pit interrupts
 		LDR		R0,=NVIC		;Load NVIC Base
-		LDR		R1,=PIT_MASK	;Load IRQ Priority mask
+		LDR		R1,=PIT_MASK	;Load PIT Enable mask
 		STR		R1,[R0,#0]		;Store Priority
 
 		;Set Priority
@@ -193,7 +191,7 @@ initPITInterrupt
 		STR		R1,[R0,#0]		;Store
 
 		;CH0 Interrupt condition
-		LDR 		R0,=PIT_LDVAL0	;Load LDVAL0, which is the CH0 Base
+		LDR 	R0,=PIT_LDVAL0	;Load LDVAL0, which is the CH0 Base
 		LDR		R1,=TFLG_CLR	;Load mask to reset interrupt condition
 		STR		R1,[R0,#TFLG1]	;Store mask at offset
 
@@ -272,6 +270,60 @@ setSPIBaud	;Subroutine sets the baud rate for the SPI
 			BX		LR
 			
 			
+			EXPORT initPTA
+initPTA		;Subroutine initalizes Port A Pins 4 and 5 for interrupts
+			;These analog inputs will be used to drive power mode
+			;and turn signals
+			;Input: None
+			;Output: Initialized Port A pins 4 and 5
+			;Regmod: None
+			
+			;Save registers
+			PUSH	{R0-R2}
+			
+			;Enable Port A in SIM
+			LDR		R0,=SIM_SCGC5	
+			LDR		R1,=EN_PTA		
+			STR		R1,[R0,#0]		
+			
+			;Properly multiplex and set up interrupt for Pins 4 and 5
+			LDR		R0,=PTA_PCR_4
+			LDR		R1,=PTA_INT_MASK
+			STR		R1,[R0,#0]
+			STR		R1,[R0,#4]	;Instead of loading PCR5, used PCR4 offset by 4
+			
+			;NVIC
+			
+			;---------------Pls implement this----------------
+			;Ask Melton about unmasking interrupt in NVIC
+			;Documentation doesn't properly touch on enabling an interrupt
+			
+			;Set priority to 1 (Priority 0 is reserved for PIT as of now)
+			LDR		R0,=PTA_IPR
+			LDR		R1,=PTA_IRQ_PRI
+			STR		R1,[R0,#0]
+			
+			POP		{R0-R2}
+			BX		LR
+			
+		
+			EXPORT PORTA_IRQHandler
+PORTA_IRQHandler		
+PTA_IRQ		;IRQ Handler for Port A interrupts
+			;Function is to toggle boolean. This boolean will 
+			;tell the system if the turn signal has been acitvated
+			
+			;R0-R3 auto pushed
+			LDR		R0,=Turning
+			CMP		R0,#TRUE
+			BEQ		setFalse
+setTrue		MOVS	R1,#FALSE
+			STRB	R1,[R0,#0]
+			B		clearPTAInt
+setFalse	MOVS	R1,#TRUE
+			STRB	R1,[R0,#0]
+clearPTAInt ;----------Code-----------;
+			BX		LR
 			
 			
 ;------------------------------------------------------
@@ -282,8 +334,8 @@ setSPIBaud	;Subroutine sets the baud rate for the SPI
 ;Begin variables
 
 Count	SPACE	WORD	;Allocate word to count PIT interrupts
-
-
+Turning SPACE	BYTE	;Allocate byte for Turning boolean (True if turn signal activated)
+	
 		ALIGN		;Word align
 
 ;------------------------------------------------------
