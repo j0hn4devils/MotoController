@@ -57,13 +57,13 @@ TFLG_CLR	EQU	0x00000001	;Mask to clear timer interrupt (w1c)
 ;						 NVIC
 NVIC		EQU	0xE000E100	;Interrupt controller base address
 PIT_PRI_POS	EQU	0x16		;Pit Priority position
-PTA_PRI_POS	EQU 0x1D		;Port A Priority position
+PTA_PRI_POS	EQU 0x1E		;Port A Priority position
 PIT_MASK	EQU	(1 << PIT_PRI_POS)	;PIT IRQ Enable mask
 PIT_IPR		EQU (NVIC + 0x314) 		;IPR5 offset
 PIT_IRQ_PRI	EQU	(0 << PIT_PRI_POS)	;Set PIT Priority to 0 (highest priority)
 PTA_MASK	EQU (1 << PTA_PRI_POS)	;Port A IRQ Enable mask
 PTA_IPR		EQU	(NVIC + 0x31C)		;IPR 7 Offset?
-PTA_IRQ_PRI	EQU 0x00010000	;Mask to give priority of 1 (just below PIT)
+PTA_IRQ_PRI	EQU 0x00000000	;Mask to give priority of 1 (just below PIT)
 
 ;						 SPI
 SPI_BASE	EQU	0x40076000
@@ -308,6 +308,12 @@ initPTAInterrupt
 			LDR		R1,=PTA_IRQ_PRI
 			STR		R1,[R0,#0]
 			
+			;Clear any interrupts (see IRQ for details)
+			LDR		R0,=PTA_ISF
+			LDR		R1,[R0,#0]
+			STR		R1,[R0,#0]
+			
+			;Restore and Return
 			POP		{R0-R2}
 			BX		LR
 			
@@ -325,13 +331,16 @@ PTA_IRQ		;IRQ Handler for Port A interrupts
 			
 			
 			;R0-R3 auto pushed
-			LDR		R0,=Turning
-			CMP		R0,#TRUE
-			BEQ		setFalse
-setTrue		MOVS	R1,#FALSE
+			LDR		R0,=Turning		;Load address of turning
+			LDRB	R1,[R0,#0]		;Load value of turning
+			CMP		R1,#TRUE		;Check if true
+			
+			;Toggle variable
+			BEQ		setFalse		
+setTrue		MOVS	R1,#TRUE
 			STRB	R1,[R0,#0]
 			B		clearPTAInt
-setFalse	MOVS	R1,#TRUE
+setFalse	MOVS	R1,#FALSE
 			STRB	R1,[R0,#0]
 			
 			;Read ISF and Decode Turn signal out via Hardware decoder 
