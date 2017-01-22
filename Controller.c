@@ -5,10 +5,9 @@
 
 /*								Includes							*/
 #include "Controller.h"
-#include "Animations.c"
-
+#include "Animations.h"
 /*								Defines 							*/
-#define LED_STRIP_SIZE	30 /* # of LEDs in strip */
+#define LED_STRIP_SIZE	144						 /* # of LEDs in strip */
 
 /*								Colors								*/
 /*						 (BGR Values)							*/
@@ -28,9 +27,9 @@ int main(void)
 	/*Board initializations*/
  	__asm("CPSID	I");
 
-	/*initGPIOLightDataOut();*/
 	initSPI();
 	initPITInterrupt();
+	initPTAInterrupt();
 
 	__asm("CPSIE	I");
 
@@ -39,7 +38,7 @@ int main(void)
 	/*Main is currently being used to test features as they are being developed*/
 	for(;;)
 	{
-		sequentialPattern(144);
+		sequentialPattern(144,Turning);
 	}
 
 	return 0;

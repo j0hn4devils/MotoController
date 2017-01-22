@@ -57,9 +57,11 @@ TFLG_CLR	EQU	0x00000001	;Mask to clear timer interrupt (w1c)
 ;						 NVIC
 NVIC		EQU	0xE000E100	;Interrupt controller base address
 PIT_PRI_POS	EQU	0x16		;Pit Priority position
-PIT_MASK	EQU	(1 << PIT_PRI_POS)	;PIT IRQ Priority mask (Roy W Melton)
+PTA_PRI_POS	EQU 0x1D		;Port A Priority position
+PIT_MASK	EQU	(1 << PIT_PRI_POS)	;PIT IRQ Enable mask
 PIT_IPR		EQU (NVIC + 0x314) 		;IPR5 offset
 PIT_IRQ_PRI	EQU	(0 << PIT_PRI_POS)	;Set PIT Priority to 0 (highest priority)
+PTA_MASK	EQU (1 << PTA_PRI_POS)	;Port A IRQ Enable mask
 PTA_IPR		EQU	(NVIC + 0x31C)		;IPR 7 Offset?
 PTA_IRQ_PRI	EQU 0x00010000	;Mask to give priority of 1 (just below PIT)
 
@@ -81,9 +83,10 @@ PTA16PCR		EQU 0x40049040
 PCR16DATAMASK	EQU 0x01000200
 	
 ;						Port A
+PTA_ISF 	EQU 0x400490A0
 PTA_PCR_4	EQU 0x40049010	
 PTA_PCR_5	EQU	0x40049014
-PTA_INT_MASK	EQU 0x010B0000
+PTA_INT_MASK	EQU 0x010B0100
 
 ;-----------------------------------------------------
 ; 					Define Library
@@ -270,8 +273,9 @@ setSPIBaud	;Subroutine sets the baud rate for the SPI
 			BX		LR
 			
 			
-			EXPORT initPTA
-initPTA		;Subroutine initalizes Port A Pins 4 and 5 for interrupts
+			EXPORT initPTAInterrupt
+initPTAInterrupt		
+			;Subroutine initalizes Port A Pins 4 and 5 for interrupts
 			;These analog inputs will be used to drive power mode
 			;and turn signals
 			;Input: None
@@ -292,11 +296,12 @@ initPTA		;Subroutine initalizes Port A Pins 4 and 5 for interrupts
 			STR		R1,[R0,#0]
 			STR		R1,[R0,#4]	;Instead of loading PCR5, used PCR4 offset by 4
 			
-			;NVIC
-			
-			;---------------Pls implement this----------------
-			;Ask Melton about unmasking interrupt in NVIC
-			;Documentation doesn't properly touch on enabling an interrupt
+			;Enable interrupts within the NVIC
+			LDR		R0,=NVIC
+			LDR		R1,=PTA_MASK
+			LDR		R2,[R0,#0]
+			ORRS	R2,R2,R1
+			STR		R2,[R0,#0]
 			
 			;Set priority to 1 (Priority 0 is reserved for PIT as of now)
 			LDR		R0,=PTA_IPR
@@ -313,6 +318,12 @@ PTA_IRQ		;IRQ Handler for Port A interrupts
 			;Function is to toggle boolean. This boolean will 
 			;tell the system if the turn signal has been acitvated
 			
+			
+			;-------------------------------------------------------
+			;Currently only switching a bool for testing
+			;-------------------------------------------------------
+			
+			
 			;R0-R3 auto pushed
 			LDR		R0,=Turning
 			CMP		R0,#TRUE
@@ -326,18 +337,27 @@ setFalse	MOVS	R1,#TRUE
 			;Read ISF and Decode Turn signal out via Hardware decoder 
 			;(use other port A pins for this function to reduce power use)
 			
-clearPTAInt ;----------Code-----------;
+clearPTAInt ;Upon interrupt, the bits in the ISF are set to 1, and they are w1c
+			;So loading the register values and writing them back to the register
+			;should clear all interrupts
+			
+			LDR		R0,=PTA_ISF
+			LDR		R1,[R0,#0]
+			STR		R1,[R0,#0]
+			
+			;Return (Auto-Pushed registers restored upon return)
 			BX		LR
 			
-			
+			ALIGN	;Word align
 ;------------------------------------------------------
 ;					Variables
 
-	AREA	Variables,DATA,READWRITE
+		AREA	Variables,DATA,READWRITE
 
 ;Begin variables
 
 Count	SPACE	WORD	;Allocate word to count PIT interrupts
+		EXPORT	Turning
 Turning SPACE	BYTE	;Allocate byte for Turning boolean (True if turn signal activated)
 	
 		ALIGN		;Word align
@@ -345,7 +365,7 @@ Turning SPACE	BYTE	;Allocate byte for Turning boolean (True if turn signal activ
 ;------------------------------------------------------
 ;					Constants
 
-	AREA	Constants,DATA,READONLY
+		AREA	Constants,DATA,READONLY
 
 ;Begin constants
 

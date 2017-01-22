@@ -8,6 +8,8 @@
 
 /*								Defines 							*/
 
+#define TRUE (0x01u)
+
 /*								Colors								*/
 /*						 (BGR Values)							*/
 #define WHITE	(0x00FFFFFEu)
@@ -20,12 +22,11 @@
 
 /*turnPattern*/
 /*Displays the turning pattern to the LED strip selected by microcontroller*/
-/*Input: Number of LEDs in strip*/
+/*Input: Number of LEDs in strip, Condition for animation to loop until false*/
 /*Output: LED Strip Colors*/
 
-void sequentialPattern(int NumLED)
+void sequentialPattern(int NumLED, char TruthCondition)
 {
-	int b = 0; 				/*Loop counter for deficit loop*/
 	int c = 0; 				/*Loop counter for amber loop*/
 	int loop = 1; 		/*Loop counter for main loop*/
 	int deficit = 0; /*Number of LEDS to set to NOCOLOR at beginning of transmission*/
@@ -36,7 +37,7 @@ void sequentialPattern(int NumLED)
 	
 	/*Infinite loop as placeholder*/
 	/*Will be replaced with while (var == TRUE)*/
-  for(;;)
+  while(TruthCondition == TRUE)
 	{
 		
 		/*Transmit a start frame*/
