@@ -86,7 +86,9 @@ PCR16DATAMASK	EQU 0x01000200
 PTA_ISF 	EQU 0x400490A0
 PTA_PCR_4	EQU 0x40049010	
 PTA_PCR_5	EQU	0x40049014
-PTA_INT_MASK	EQU 0x010B0100
+PTA_INT_MASK	EQU 0x010B0103
+PTA_PCR4_INT_MASK	EQU	0x00000010
+PTA_PCR5_INT_MASK	EQU	0x00000020
 
 ;-----------------------------------------------------
 ; 					Define Library
@@ -324,13 +326,21 @@ PTA_IRQ		;IRQ Handler for Port A interrupts
 			;Function is to toggle boolean. This boolean will 
 			;tell the system if the turn signal has been acitvated
 			
-			
-			;-------------------------------------------------------
-			;Currently only switching a bool for testing
-			;-------------------------------------------------------
+			;PIN USAGES: 
+			;Inputs
+			;Pin4 will be legacy left turn signal
+			;Pin5 will be legacy right turn signal
+			;Outputs
+			;Pin1 will be new left turn signal
+			;Pin2 will be new right turn signal
+		
+			;-------------------------------------------;
+			;Currently only switching a bool for testing;
+			;-------------------------------------------;
 			
 			
 			;R0-R3 auto pushed
+			
 			LDR		R0,=Turning		;Load address of turning
 			LDRB	R1,[R0,#0]		;Load value of turning
 			CMP		R1,#TRUE		;Check if true
@@ -345,8 +355,16 @@ setFalse	MOVS	R1,#FALSE
 			
 			;Read ISF and Decode Turn signal out via Hardware decoder 
 			;(use other port A pins for this function to reduce power use)
-			
-clearPTAInt ;Upon interrupt, the bits in the ISF are set to 1, and they are w1c
+			LDR		R0,=PTA_ISF
+			LDR		R1,[R0,#0]
+			LDR		R2,=PTA_PCR4_INT_MASK
+			ANDS	R2,R2,R1
+			BEQ		TurnLeft
+TurnRight	;Output to PTA 
+TurnLeft	;Output to PTA
+
+clearPTAInt LDR		R1,[R0,#0]
+			;Upon interrupt, the bits in the ISF are set to 1, and they are w1c
 			;So loading the register values and writing them back to the register
 			;should clear all interrupts
 			

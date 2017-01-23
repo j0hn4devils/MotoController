@@ -6,3 +6,7 @@
 extern void sequentialPattern(int NumLED, char TruthCondition);
 extern void setStrip(int NumLED, int Color, int Speed);
 extern void slidePattern(int NumLED);
+
+/*Needed for Sequential animation; must be hardcoded in*/
+extern char Turning;
+

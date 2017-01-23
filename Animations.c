@@ -33,11 +33,10 @@ void sequentialPattern(int NumLED, char TruthCondition)
 	int setamber = (NumLED/2 + NumLED/4); /*Set 3/4 LEDS to Amber*/
 
 	/*Set baud for appropriate speed*/
-	setSPIBaud(0x33);
-	
-	/*Infinite loop as placeholder*/
-	/*Will be replaced with while (var == TRUE)*/
-  while(TruthCondition == TRUE)
+	setSPIBaud(0x32);
+
+	/*Ask Melton as to why using TruthCondition will not work (Separate allocation in memory?)*/
+  while(Turning == TRUE)
 	{
 		
 		/*Transmit a start frame*/
@@ -76,6 +75,7 @@ void sequentialPattern(int NumLED, char TruthCondition)
 			loop = 1;
 		}
 	}
+	startFrame();
 	return;
 }
 
