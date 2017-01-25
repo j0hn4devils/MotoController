@@ -315,6 +315,10 @@ initPTAInterrupt
 			LDR		R1,[R0,#0]
 			STR		R1,[R0,#0]
 			
+			LDR		R0,=Turning
+			MOVS	R1,#0
+			STRB	R1,[R0,#0]
+			
 			;Restore and Return
 			POP		{R0-R2}
 			BX		LR

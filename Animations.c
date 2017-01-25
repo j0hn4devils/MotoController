@@ -17,7 +17,6 @@
 #define	NOCOLOR	(0x00000000u)
 
 
-
 /*								  Code								*/
 
 /*turnPattern*/
@@ -25,7 +24,7 @@
 /*Input: Number of LEDs in strip, Condition for animation to loop until false*/
 /*Output: LED Strip Colors*/
 
-void sequentialPattern(int NumLED, char TruthCondition)
+void sequentialPattern(int NumLED, char *TruthCondition)
 {
 	int c = 0; 				/*Loop counter for amber loop*/
 	int loop = 1; 		/*Loop counter for main loop*/
@@ -35,8 +34,8 @@ void sequentialPattern(int NumLED, char TruthCondition)
 	/*Set baud for appropriate speed*/
 	setSPIBaud(0x32);
 
-	/*Ask Melton as to why using TruthCondition will not work (Separate allocation in memory?)*/
-  while(Turning == TRUE)
+	/*Separate allocation in memory?*/
+  while(*TruthCondition == TRUE)
 	{
 		
 		/*Transmit a start frame*/

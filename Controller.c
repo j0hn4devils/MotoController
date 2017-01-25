@@ -39,9 +39,8 @@ int main(void)
 	/*Main is currently being used to test features as they are being developed*/
 	for(;;)
 	{
-		sequentialPattern(144,Turning);
+		sequentialPattern(144,&Turning);
 		setStrip(144,WHITE,0x00);
-		wait(100);
 	}
 
 	return 0;
