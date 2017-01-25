@@ -15,15 +15,12 @@ MIXED_ASM_C SETL {TRUE}
 			OPT		1	 ;Enables listing
 
 ;-----------------------------------------------------
+;				  Acquire Resources
+			GET		EQUATES.s
+
+;-----------------------------------------------------
 ;					   Equates
 	
-SPI_DL		EQU		0x40076006
-SPI_DH		EQU		0x40076007
-SPI_BASE	EQU		0x40076000
-;The following equates are the hex codes for the colors
-WHITE		EQU 	0x00FFFFFF
-AMBER		EQU		0x0000C2FF
-NOCOLOR		EQU		0x00000000
 	
 SHIFT		EQU  	0x10		;Shift value to shift over bytes
 CHECKTRANS	EQU 	0x20		;Check if ready to send
@@ -117,42 +114,6 @@ startLoop
 		
 		;Restpre and return
 Endit	POP		{R0-R4,PC}	
-
-
-
-
-
-
-		EXPORT	endFrame
-endFrame
-		;Sends an end frame through the SPI interface
-		;Input: None
-		;Output: End Frame through SPI
-		;Regmod: None
-		
-		;Preserve registers
-		PUSH	{R0-R4,LR}
-		
-		;Move FF to R0 and instantiate counter in R1
-		LDR		R0,=0xFFFFFFFF
-		MOVS	R1,#0
-		
-		;Load the DL and Base SPI addresses
-		LDR		R2,=SPI_DL
-		LDR		R3,=SPI_BASE
-		
-		;Transfer loop
-endloop	CMP		R1,#2		;Check if Counter == 4
-		BEQ		Endite		;If true, end loop
-		BL		checkTrans	;Check if ready to transfer
-		LDRB	R4,[R3,#0]	;Load status register (to write)
-		STRH	R0,[R2,#0]	;Send data out SPI DL
-		ADDS	R1,#1		;Increment counter
-		B		endloop		;Loop
-		
-		;Restore and return
-Endite	POP		{R0-R4,PC}
-
 
 
 
