@@ -1,13 +1,12 @@
 /*Animations.c*/
 /*Uses ASM Libraries to drive various LED animations*/
 /*Written by: John DeBrino*/
-/*Revision Date: 1/18/2016*/
+/*Revision Date: 1/25/2016*/
 
 /*								Includes							*/
 #include "Controller.h"
 
 /*								Defines 							*/
-
 #define TRUE (0x01u)
 
 /*								Colors								*/
@@ -43,7 +42,7 @@ void sequentialPattern(int NumLED, char *TruthCondition)
 		
 		/*Loop LEDS to recieve no color*/
 		/*Reset deficit to 0*/
-		for (deficit; deficit > 0; deficit--)
+		for (; deficit > 0; deficit--)
 		{
 			setColor(NOCOLOR);
 		}
@@ -91,7 +90,7 @@ void setStrip(int NumLED, int Color, int Speed)
 	/*Set baud rate for fastest transfer speed*/
 	setSPIBaud(Speed);
 	
-	for(iterator; iterator <= NumLED; iterator++)
+	for(; iterator <= NumLED; iterator++)
 	{
 		setColor(Color);
 	}
@@ -111,11 +110,11 @@ void slidePattern(int NumLED)
 	/*Set baud rate low for proper animation*/
 	setSPIBaud(0x77);
 	
-	for(AmberIterator; AmberIterator <= NumLED; AmberIterator++)
+	for(; AmberIterator <= NumLED; AmberIterator++)
 	{
 		setColor(AMBER);
 	}
-	for(ClearIterator; ClearIterator <= NumLED; ClearIterator++)
+	for(; ClearIterator <= NumLED; ClearIterator++)
 	{
 		setColor(NOCOLOR);
 	}

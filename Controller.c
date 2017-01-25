@@ -1,14 +1,14 @@
 /*Controller.c*/
 /*Uses ASM Libraries to perform desired functions*/
 /*Written by: John DeBrino*/
-/*Revision Date: 1/17/2016*/
+/*Revision Date: 1/25/2016*/
 
 /*								Includes							*/
 #include "Controller.h"
 #include "Animations.h"
 /*								Defines 							*/
 #define LED_STRIP_SIZE	144						 /* # of LEDs in strip */
-
+#define TRUE 1
 /*								Colors								*/
 /*						 (BGR Values)							*/
 #define WHITE	(0x00FFFFFEu)
@@ -39,11 +39,19 @@ int main(void)
 	/*Main is currently being used to test features as they are being developed*/
 	for(;;)
 	{
-		sequentialPattern(144,&Turning);
-		setStrip(144,WHITE,0x00);
+		/*If the bool for turning has been set for true, run the*/
+		/*Sequential pattern until the bool is reset to false*/
+		if (Turning == TRUE)
+		{
+			sequentialPattern(144,&Turning);
+			setStrip(144,WHITE,0x00);
+		}
+		else
+		{
+			setStrip(144,NOCOLOR,0x71);
+		}
+			
 	}
-
-	return 0;
 }
 
 

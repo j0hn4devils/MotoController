@@ -1,5 +1,10 @@
 ;Equates.s
-;File of equates used in all other files
+;File of equates for NXP KL46
+;Created on 1/25/16
+;Created by: John DeBrino
+
+			OPT	2			;Disables listing
+			
 
 ;General
 ;Sizes are in multiples of 8 bits
@@ -80,3 +85,4 @@ WHITE		EQU 	0x00FFFFFF
 AMBER		EQU		0x0000C2FF
 NOCOLOR		EQU		0x00000000
 	
+	END

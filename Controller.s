@@ -3,7 +3,7 @@
 ;Initialize background tasks (UART,TPM,etc)
 ;Written by John DeBrino
 ;Sources referrenced: Roy Melton
-;Revision Date: 1/17/2016
+;Revision Date: 1/25/2016
 ;-----------------------------------------------------
 ;		  Assembler Directives and Includes
 
@@ -20,7 +20,6 @@ MIXED_ASM_C SETL {TRUE}
 
 ;-----------------------------------------------------
 ;					   Equates
-
 
 
 ;-----------------------------------------------------
