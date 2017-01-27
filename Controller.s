@@ -21,6 +21,11 @@ MIXED_ASM_C SETL {TRUE}
 ;-----------------------------------------------------
 ;					   Equates
 
+PTA_PCR4_INT_MASK	EQU	0x00000010	;Mask to determine interrupt is Pin 4
+PTA_PCR5_INT_MASK	EQU	0x00000020	;Mask to determine interrupt is Pin 5
+PTA_INT_MASK	EQU 0x010B0103 ;Mask to enable interupts on rising and falling edge for GPIO
+PIN1_OUT EQU 0x02	;Mask for PDOR to output 1 on Pin 1
+PIN2_OUT EQU 0x04 ;Mask for PDOR to output 1 on Pin 2
 
 ;-----------------------------------------------------
 ; 					Define Library
@@ -34,8 +39,7 @@ MIXED_ASM_C SETL {TRUE}
 
 		EXPORT initSPI
 initSPI
-		;Inits SPI for data transmission, 8 bit mode
-		;The purpose for the SPI is to drive an LED Strip
+		;Inits SPI for data transmission, 16 bit mode
 		;Input: None
 		;Output: SPI Initialized; ready for data transmission
 		;Regmod: None
@@ -49,19 +53,19 @@ initSPI
 		LDR		R2,[R0,#0]	;Load current SCGC4 value (don't disable other modules)
 		ORRS	R2,R2,R1	;Or in the mask to enable SPI0
 		STR		R2,[R0,#0]	;Store new value at SCGC4
-		
+
 		;Map SPI0 Output to Pins PTA15 (CLK) and PTA16 (MOSI)
-		
+
 		LDR		R0,=PTA15PCR	;Load PTA15PCR address
 		LDR		R1,=PCR15CLKMASK;Load Mask
 		STR		R1,[R0,#0]		;Store mask
-		
+
 		;Repeat process for PTA16
-		
+
 		LDR		R0,=PTA16PCR
 		LDR		R1,=PCR16DATAMASK
 		STR		R1,[R0,#0]
-		
+
 		;Set the BAUD rate
 		LDR		R0,=SPI_BAUD	;Load the BAUD rate register
 		MOVS	R1,#BAUD_MASK	;Load the mask for desired BAUD rate
@@ -199,118 +203,124 @@ setSPIBaud	;Subroutine sets the baud rate for the SPI
 			;Inputs: Baud rate in R0
 			;Output: Baud rate is set
 			;Regmod: None
-			
+
 			PUSH	{R1}
 			LDR		R1,=SPI_BAUD
 			STRB	R0,[R1,#0]
 			POP		{R1}
 			BX		LR
-			
-			
+
+
 			EXPORT initPTAInterrupt
-initPTAInterrupt		
+initPTAInterrupt
 			;Subroutine initalizes Port A Pins 4 and 5 for interrupts
 			;These analog inputs will be used to drive power mode
 			;and turn signals
 			;Input: None
 			;Output: Initialized Port A pins 4 and 5
 			;Regmod: None
-			
+
 			;Save registers
 			PUSH	{R0-R2}
-			
+
 			;Enable Port A in SIM
-			LDR		R0,=SIM_SCGC5	
-			LDR		R1,=EN_PTA		
-			STR		R1,[R0,#0]		
-			
+			LDR		R0,=SIM_SCGC5
+			LDR		R1,=EN_PTA
+			STR		R1,[R0,#0]
+
 			;Properly multiplex and set up interrupt for Pins 4 and 5
 			LDR		R0,=PTA_PCR_4
 			LDR		R1,=PTA_INT_MASK
 			STR		R1,[R0,#0]
 			STR		R1,[R0,#4]	;Instead of loading PCR5, used PCR4 offset by 4
-			
+
 			;Enable interrupts within the NVIC
 			LDR		R0,=NVIC
 			LDR		R1,=PTA_MASK
 			LDR		R2,[R0,#0]
 			ORRS	R2,R2,R1
 			STR		R2,[R0,#0]
-			
+
 			;Set priority to 1 (Priority 0 is reserved for PIT as of now)
 			LDR		R0,=PTA_IPR
 			LDR		R1,=PTA_IRQ_PRI
 			STR		R1,[R0,#0]
-			
+
 			;Clear any interrupts (see IRQ for details)
 			LDR		R0,=PTA_ISF
 			LDR		R1,[R0,#0]
 			STR		R1,[R0,#0]
-			
+
 			LDR		R0,=Turning
 			MOVS	R1,#0
 			STRB	R1,[R0,#0]
-			
+
 			;Restore and Return
 			POP		{R0-R2}
 			BX		LR
-			
-		
+
+
 			EXPORT PORTA_IRQHandler
-PORTA_IRQHandler		
+PORTA_IRQHandler
 PTA_IRQ		;IRQ Handler for Port A interrupts
-			;Function is to toggle boolean. This boolean will 
+			;Function is to toggle boolean. This boolean will
 			;tell the system if the turn signal has been acitvated
-			
-			;PIN USAGES: 
+
+			;PIN USAGES:
 			;Inputs
 			;Pin4 will be legacy left turn signal
 			;Pin5 will be legacy right turn signal
 			;Outputs
 			;Pin1 will be new left turn signal
 			;Pin2 will be new right turn signal
-		
+
 			;-------------------------------------------;
 			;Currently only switching a bool for testing;
 			;-------------------------------------------;
-			
-			
+
+
 			;R0-R3 auto pushed
-			
+
 			LDR		R0,=Turning		;Load address of turning
 			LDRB	R1,[R0,#0]		;Load value of turning
 			CMP		R1,#TRUE		;Check if true
-			
+
 			;Toggle variable
-			BEQ		setFalse		
+			BEQ		setFalse
 setTrue		MOVS	R1,#TRUE
 			STRB	R1,[R0,#0]
 			B		clearPTAInt
 setFalse	MOVS	R1,#FALSE
 			STRB	R1,[R0,#0]
-			
-			;Read ISF and Decode Turn signal out via Hardware decoder 
+
+			;Read ISF and Decode Turn signal out via Hardware decoder
 			;(use other port A pins for this function to reduce power use)
 			LDR		R0,=PTA_ISF
 			LDR		R1,[R0,#0]
 			LDR		R2,=PTA_PCR4_INT_MASK
 			ANDS	R2,R2,R1
 			BEQ		TurnLeft
-TurnRight	;Output to PTA 
-TurnLeft	;Output to PTA
+
+TurnRight	LDR R0,=PTA_PDOR
+					LDRB R1,=PIN2_OUT
+					STRB R1,[R2,#0]
+
+TurnLeft	LDR	R0,=PTA_PDOR
+					LDRB R1,=PIN1_OUT
+					STRB R1,[R0,#0]
 
 clearPTAInt LDR		R1,[R0,#0]
 			;Upon interrupt, the bits in the ISF are set to 1, and they are w1c
 			;So loading the register values and writing them back to the register
 			;should clear all interrupts
-			
+
 			LDR		R0,=PTA_ISF
 			LDR		R1,[R0,#0]
 			STR		R1,[R0,#0]
-			
+
 			;Return (Auto-Pushed registers restored upon return)
 			BX		LR
-			
+
 			ALIGN	;Word align
 ;------------------------------------------------------
 ;					Variables
@@ -322,7 +332,7 @@ clearPTAInt LDR		R1,[R0,#0]
 Count	SPACE	WORD	;Allocate word to count PIT interrupts
 		EXPORT	Turning
 Turning SPACE	BYTE	;Allocate byte for Turning boolean (True if turn signal activated)
-	
+
 		ALIGN		;Word align
 
 ;------------------------------------------------------

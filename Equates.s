@@ -4,7 +4,7 @@
 ;Created by: John DeBrino
 
 			OPT	2			;Disables listing
-			
+
 
 ;General
 ;Sizes are in multiples of 8 bits
@@ -23,7 +23,7 @@ SPI0_MASK	EQU	0x00400000	;Mask to enable SPI
 
 ;						SCGC5
 SIM_SCGC5	EQU	0x40048038	;Absolute Address of SCGC5 Module
-EN_PTE		EQU	0x00001000	;Mask to enable PORT E 
+EN_PTE		EQU	0x00001000	;Mask to enable PORT E
 EN_PTA		EQU	0x00000200	;Mask to enable PORT A
 
 
@@ -67,22 +67,20 @@ C2_16BIT	EQU	0x40		;Mask for C2 to enable 16 bit mode
 C1_EN_MSTR	EQU	0x50		;Enables SPI and initalizes as master device
 BAUD_MASK	EQU 0x33		;Mask for baud register
 EN_FIFO		EQU	0x01		;Enables 64 bit FIFO
-PTA15PCR	EQU	0x4004903C	
+PTA15PCR	EQU	0x4004903C
 PCR15CLKMASK	EQU 0x01000200
 PTA16PCR		EQU 0x40049040
 PCR16DATAMASK	EQU 0x01000200
-	
+
 ;						Port A
-PTA_ISF 	EQU 0x400490A0
-PTA_PCR_4	EQU 0x40049010	
-PTA_PCR_5	EQU	0x40049014
-PTA_INT_MASK	EQU 0x010B0103
-PTA_PCR4_INT_MASK	EQU	0x00000010
-PTA_PCR5_INT_MASK	EQU	0x00000020
+PTA_ISF 	EQU 0x400490A0	;Interrupt status flag register
+PTA_PCR_4	EQU 0x40049010	;PCR4
+PTA_PCR_5	EQU	0x40049014	;PCR5
+PTA_PDOR	EQU 0x400FF000	;Port data output register
 
 ;The following equates are the hex codes for the colors
 WHITE		EQU 	0x00FFFFFF
 AMBER		EQU		0x0000C2FF
 NOCOLOR		EQU		0x00000000
-	
+
 	END

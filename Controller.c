@@ -24,7 +24,7 @@ int main(void)
 	int y = 0;
 	int z = 0;
 	*/
-	
+
 	/*Board initializations*/
  	__asm("CPSID	I");
 
@@ -44,16 +44,12 @@ int main(void)
 		if (Turning == TRUE)
 		{
 			sequentialPattern(144,&Turning);
-			setStrip(144,WHITE,0x00);
+			setStrip(144,WHITE,0x30);
 		}
 		else
 		{
 			setStrip(144,NOCOLOR,0x71);
 		}
-			
+
 	}
 }
-
-
-
-
