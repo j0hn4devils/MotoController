@@ -74,9 +74,12 @@ PCR16DATAMASK	EQU 0x01000200
 
 ;						Port A
 PTA_ISF 	EQU 0x400490A0	;Interrupt status flag register
+PTA_PCR_1	EQU	0x40049004	;PCR1
+PTA_PCR_2	EQU	0x40049008	;PCR2
 PTA_PCR_4	EQU 0x40049010	;PCR4
 PTA_PCR_5	EQU	0x40049014	;PCR5
 PTA_PDOR	EQU 0x400FF000	;Port data output register
+PTA_PDDR	EQU	0x400FF014
 
 ;The following equates are the hex codes for the colors
 WHITE		EQU 	0x00FFFFFF

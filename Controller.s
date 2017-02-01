@@ -23,9 +23,10 @@ MIXED_ASM_C SETL {TRUE}
 
 PTA_PCR4_INT_MASK	EQU	0x00000010	;Mask to determine interrupt is Pin 4
 PTA_PCR5_INT_MASK	EQU	0x00000020	;Mask to determine interrupt is Pin 5
-PTA_INT_MASK	EQU 0x010B0103 ;Mask to enable interupts on rising and falling edge for GPIO
-PIN1_OUT EQU 0x02	;Mask for PDOR to output 1 on Pin 1
-PIN2_OUT EQU 0x04 ;Mask for PDOR to output 1 on Pin 2
+PTA_INT_MASK		EQU 0x010B0103 	;Mask to enable interupts on rising and falling edge for GPIO
+PIN1_OUT 			EQU 0x02		;Mask for PDOR/PDDR to output 1 on Pin 1
+PIN2_OUT 			EQU 0x04 		;Mask for PDOR/PDDR to output 1 on Pin 2
+GPIO_OUT_MASK		EQU 0x01000100	;Mask to enable GPIO function
 
 ;-----------------------------------------------------
 ; 					Define Library
@@ -159,9 +160,9 @@ PIT_IRQHandler
 			;No PUSH; R0-R3 auto pushed
 
 			LDR     R0,=Count           ;Load count address
-            		LDR     R1,[R0,#0]          ;Load count data
+            LDR     R1,[R0,#0]          ;Load count data
 			ADDS    R1,R1,#1            ;Increment
-            		STR     R1,[R0,#0]          ;Store new count
+            STR     R1,[R0,#0]          ;Store new count
 
 endPIT_ISR
 			;Write 1 to TIF
@@ -233,6 +234,24 @@ initPTAInterrupt
 			LDR		R1,=PTA_INT_MASK
 			STR		R1,[R0,#0]
 			STR		R1,[R0,#4]	;Instead of loading PCR5, used PCR4 offset by 4
+			
+			;Multiplex pins 1 and 2 for GPIO Output
+			LDR		R0,=PTA_PCR_1
+			LDR		R1,=GPIO_OUT_MASK
+			STR		R1,[R0,#0]
+			STR		R1,[R0,#4]	;Instead of loading PCR2, use PCR1 offset by 4
+			
+			;Init Output
+			LDR		R0,=PTA_PDOR
+			LDR		R1,=0x00000000
+			STR		R1,[R0,#0]
+			
+			;Set GPIO Pins as output
+			LDR		R0,=PTA_PDDR
+			MOVS	R1,#PIN1_OUT
+			MOVS	R2,#PIN2_OUT
+			ANDS	R2,R2,R1
+			STRB	R2,[R0,#0]
 
 			;Enable interrupts within the NVIC
 			LDR		R0,=NVIC
@@ -301,13 +320,18 @@ setFalse	MOVS	R1,#FALSE
 			ANDS	R2,R2,R1
 			BEQ		TurnLeft
 
-TurnRight	LDR R0,=PTA_PDOR
-					LDRB R1,=PIN2_OUT
-					STRB R1,[R2,#0]
+TurnRight	LDR 	R0,=PTA_PDOR
+			;LDR		R1,[R0,#0]
+			MOVS 	R1,#PIN2_OUT
+			STRB 	R1,[R0,#0]
+			;LDR		R2,[R0,#0]
+			B		clearPTAInt
 
-TurnLeft	LDR	R0,=PTA_PDOR
-					LDRB R1,=PIN1_OUT
-					STRB R1,[R0,#0]
+TurnLeft	LDR		R0,=PTA_PDOR
+			;LDR		R1,[R0,#0]
+			MOVS 	R1,#PIN1_OUT
+			STRB 	R1,[R0,#0]
+			;LDR		R2,[R0,#0]
 
 clearPTAInt LDR		R1,[R0,#0]
 			;Upon interrupt, the bits in the ISF are set to 1, and they are w1c
