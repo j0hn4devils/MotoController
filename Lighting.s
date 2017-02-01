@@ -3,7 +3,7 @@
 ;Lighting controls library NXP MKL46256XXXX
 ;Written by John DeBrino
 ;Sources referrenced: Roy Melton
-;Revision Date: 1/17/2016
+;Revision Date: 2/1/2016
 
 ;-----------------------------------------------------
 ;		  Assembler Directives and Includes
@@ -52,7 +52,7 @@ setColor	;Sends 1 LED frame to the SPI with specified color
 		LDR		R2,=SPI_BASE	;Load the base, which is the status register
 	
 		;Mask Color value for LED frame
-		LDR		R3,=0xFF000000	;Load first byte of LED Frame
+		LDR		R3,=0xF0000000	;Load first byte of LED Frame (Lower brightness used for testing)
 		ORRS	R0,R0,R3		;Mask into LED Color value
 		
 		;Copy color to R4 for proper output
@@ -64,20 +64,19 @@ setColor	;Sends 1 LED frame to the SPI with specified color
 		;Unknown if RGB transmission is in correct order
 		
 		;Transmit Start and B
-		BL		checkTrans		;Testing to see if issue arises with not checking on first transfer
-		CPSID	I
+		BL		checkTrans		;Check if ready for transfer
+		CPSID	I				;Disable interrupts for critical code
 		LDRB	R3,[R2,#0]		;Must read before a write
 		STRH	R4,[R1,#0]		;Store new color
-		CPSIE	I
+		CPSIE	I				;End critical code; enable interrupts
 		BL		checkTrans		;Wait until ready to transmit
 		
 
 		;Transmit G and R
-		CPSID	I
-		MOVS	R3,#0
+		CPSID	I				;Disable interrupts for critical code
 		LDRB	R3,[R2,#0]		;Must read before a write
 		STRH	R0,[R1,#0]		;Store new color
-		CPSIE	I
+		CPSIE	I				;End critical code; enable interrupts
 		
 		;Restore and return
 		POP		{R1-R4,PC}
@@ -87,6 +86,7 @@ setColor	;Sends 1 LED frame to the SPI with specified color
 		EXPORT	startFrame
 startFrame
 		;Sends a start frame to the SPI
+		;Function is written for 16 bit transmission mode
 		;Input: None
 		;Output: Start Frame to SPI
 		;Regmod None
@@ -95,7 +95,7 @@ startFrame
 		PUSH	{R0-R4,LR}
 		
 		;Move 0 to R0 as data and R1 as counter
-		LDR 	R0,=0x00000000
+		MOVS 	R0,#0
 		MOVS	R1,#0
 		
 		;Load DL and BASE for SPI in R2 and R3
@@ -112,7 +112,7 @@ startLoop
 		ADDS	R1,#1		;Increment counter
 		B		startLoop	;Loop
 		
-		;Restpre and return
+		;Restore and return
 Endit	POP		{R0-R4,PC}	
 
 

@@ -3,7 +3,7 @@
 ;Initialize background tasks (UART,TPM,etc)
 ;Written by John DeBrino
 ;Sources referrenced: Roy Melton
-;Revision Date: 1/25/2016
+;Revision Date: 2/1/2016
 ;-----------------------------------------------------
 ;		  Assembler Directives and Includes
 
@@ -156,6 +156,8 @@ PIT_IRQHandler
 			;Regmod: None
 
 			;-----------Modify this code-----------;
+			;if impl == delay
+			;{Toggle turning at Count == ~100 (1s);}
 
 			;No PUSH; R0-R3 auto pushed
 
@@ -243,14 +245,14 @@ initPTAInterrupt
 			
 			;Init Output
 			LDR		R0,=PTA_PDOR
-			LDR		R1,=0x00000000
+			MOVS	R1,#0
 			STR		R1,[R0,#0]
 			
 			;Set GPIO Pins as output
 			LDR		R0,=PTA_PDDR
 			MOVS	R1,#PIN1_OUT
 			MOVS	R2,#PIN2_OUT
-			ANDS	R2,R2,R1
+			ORRS	R2,R2,R1		;Or masks together for 1 write
 			STRB	R2,[R0,#0]
 
 			;Enable interrupts within the NVIC
@@ -320,20 +322,27 @@ setFalse	MOVS	R1,#FALSE
 			ANDS	R2,R2,R1
 			BEQ		TurnLeft
 
+			;For TurnLeft/Right, PDOR is written with the bit that enables the
+			;Pin identified by the PINX_OUT mask.
+			
 TurnRight	LDR 	R0,=PTA_PDOR
-			;LDR		R1,[R0,#0]
+			;LDR	R1,[R0,#0]		;Debug
 			MOVS 	R1,#PIN2_OUT
 			STRB 	R1,[R0,#0]
-			;LDR		R2,[R0,#0]
+			;LDR	R2,[R0,#0]		;Debug
 			B		clearPTAInt
 
 TurnLeft	LDR		R0,=PTA_PDOR
-			;LDR		R1,[R0,#0]
+			;LDR	R1,[R0,#0]		;Debug
 			MOVS 	R1,#PIN1_OUT
 			STRB 	R1,[R0,#0]
-			;LDR		R2,[R0,#0]
+			;LDR	R2,[R0,#0]		;Debug
 
+			
+			;Clear the interrupt so that when leaving the ISR, interrupt is not triggered
+			
 clearPTAInt LDR		R1,[R0,#0]
+
 			;Upon interrupt, the bits in the ISF are set to 1, and they are w1c
 			;So loading the register values and writing them back to the register
 			;should clear all interrupts

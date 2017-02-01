@@ -1,7 +1,7 @@
 /*Animations.c*/
 /*Uses ASM Libraries to drive various LED animations*/
 /*Written by: John DeBrino*/
-/*Revision Date: 1/25/2016*/
+/*Revision Date: 2/1/2016*/
 
 /*								Includes							*/
 #include "Controller.h"
@@ -108,7 +108,7 @@ void slidePattern(int NumLED)
 	int ClearIterator = 0;
 	
 	/*Set baud rate low for proper animation*/
-	setSPIBaud(0x77);
+	setSPIBaud(0x33);
 	
 	for(; AmberIterator <= NumLED; AmberIterator++)
 	{
