@@ -77,6 +77,39 @@ void sequentialPattern(int NumLED, char *TruthCondition)
 	return;
 }
 
+
+void ReverseSequentialPattern(int NumLED, char *TruthCondition)
+{
+  int b = 0;                            /*Deficit loop counter*/
+	int c = 0; 				                    /*Loop counter for amber loop*/
+	int deficit = NumLED-1;               /*Number of LEDS to set to NOCOLOR at beginning of transmission*/
+	int setamber = (NumLED/2 + NumLED/4); /*Set 3/4 LEDS to Amber*/
+  int loops = NumLED+setamber; 		      /*Maximum number of loops*/
+
+	/*Set baud for appropriate speed*/
+	setSPIBaud(0x32);
+  while(*TruthCondition == TRUE)
+  {
+  startFrame();
+  
+  for (c = 0; c <= deficit; c--)  
+  {
+    setColor(NOCOLOR);
+  }
+  deficit--;
+  for (b=0; b<= setamber;b++)
+  {
+    setColor(AMBER);
+  }
+  if (deficit+setamber == 0)
+  {
+    deficit=NumLED-1;
+  }
+  startFrame();
+  }
+  
+
+}
 /*setStrip*/
 /*Sets entire strip to desired color*/
 /*Input: Size of LED strip (in LEDs)*/

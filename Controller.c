@@ -43,7 +43,7 @@ int main(void)
 		/*Sequential pattern until the bool is reset to false*/
 		if (Turning == TRUE)
 		{
-			sequentialPattern(144,&Turning);
+			ReverseSequentialPattern(144,&Turning);
 			setStrip(144,WHITE,0x30);
 		}
 		else
