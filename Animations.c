@@ -82,7 +82,7 @@ void ReverseSequentialPattern(int NumLED, char *TruthCondition)
 {
   int b = 0;                            /*Deficit loop counter*/
 	int c = 0; 				                    /*Loop counter for amber loop*/
-	int deficit = NumLED-1;               /*Number of LEDS to set to NOCOLOR at beginning of transmission*/
+	signed int deficit = NumLED-1;               /*Number of LEDS to set to NOCOLOR at beginning of transmission*/
 	int setamber = (NumLED/2 + NumLED/4); /*Set 3/4 LEDS to Amber*/
   int loops = NumLED+setamber; 		      /*Maximum number of loops*/
 
@@ -92,7 +92,7 @@ void ReverseSequentialPattern(int NumLED, char *TruthCondition)
   {
   startFrame();
   
-  for (c = 0; c <= deficit; c--)  
+  for (c = 0; c <= deficit; c++)  
   {
     setColor(NOCOLOR);
   }
@@ -101,9 +101,17 @@ void ReverseSequentialPattern(int NumLED, char *TruthCondition)
   {
     setColor(AMBER);
   }
-  if (deficit+setamber == 0)
+	if (deficit <= 0)
+		{setamber--;}
+	for (loops = 0; loops <= 144; loops++)
+	{setColor(NOCOLOR);}
+  if (deficit+setamber <= 0)
   {
+		if (setamber ==0)
+		{
     deficit=NumLED-1;
+		setamber=(NumLED/2)+(NumLED/4);
+		}
   }
   startFrame();
   }

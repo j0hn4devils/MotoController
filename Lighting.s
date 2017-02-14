@@ -137,7 +137,7 @@ transLoop
 		LDRB	R2,[R0,#0]		;Read the status register
 		ANDS	R2,R2,R1		;Mask status register with Transmit bit mask	
 		CMP		R2,R1			;Check to see if only transmit bit is set		
-		BNE 	transLoop		;If not, loop until set
+ 		BNE 	transLoop		;If not, loop until set
 		
 		;Restore and Return
 		POP		{R0-R2,PC}
