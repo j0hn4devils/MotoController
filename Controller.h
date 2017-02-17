@@ -13,14 +13,15 @@ typedef char	int8;
 typedef unsigned int UInt32;
 
 
-/*         Controller.s         */
+/*                     Controller.s                 */
 void initPITInterrupt(void);
 void initSPI(void);
 void wait(int ms);
 void setSPIBaud(int BaudRate);
 void initPTAInterrupt(void);
+void setSignal(char LeftTurnBool, char RightTurnBool);
 
-/*					Lighting.s					*/
+/*					    Lighting.s					*/
 void setColor(int Color);
 void startFrame(void);
 void endFrame(void);

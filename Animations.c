@@ -87,7 +87,7 @@ void ReverseSequentialPattern(int NumLED, char *TruthCondition)
   int loops = NumLED+setamber; 		      /*Maximum number of loops*/
 
 	/*Set baud for appropriate speed*/
-	setSPIBaud(0x32);
+	setSPIBaud(0x42);
   while(*TruthCondition == TRUE)
   {
   startFrame();
@@ -104,7 +104,7 @@ void ReverseSequentialPattern(int NumLED, char *TruthCondition)
 	if (deficit <= 0)
 		{setamber--;}
 	for (loops = 0; loops <= 144; loops++)
-	{setColor(NOCOLOR);}
+        {setColor(NOCOLOR);}
   if (deficit+setamber <= 0)
   {
 		if (setamber ==0)
@@ -130,12 +130,36 @@ void setStrip(int NumLED, int Color, int Speed)
 
 	/*Set baud rate for fastest transfer speed*/
 	setSPIBaud(Speed);
+    
+    /*Send start frame*/
+    startFrame();
 	
 	for(; iterator <= NumLED; iterator++)
 	{
 		setColor(Color);
 	}
+    
 	return;	
+}
+
+void reverseSetStrip(int NumLED, int Color, int Speed)
+{
+    int iterator = 0;
+    int deficit = NumLED-1;
+    
+    setSPIBaud(Speed);
+    
+    for(; iterator <= NumLED; iterator++)
+    {
+        for(; deficit >0; deficit--)
+        {
+            setColor(NOCOLOR);
+        }
+        for(int temp = deficit; temp <= NumLED; deficit++)
+        {
+            setColor(WHITE);
+        }
+    }
 }
 
 /*slidePattern*/

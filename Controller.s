@@ -214,6 +214,41 @@ setSPIBaud	;Subroutine sets the baud rate for the SPI
 			BX		LR
 
 
+            EXPORT  setSignal
+setSignal   ;Set signal allows manual setting of the two turn signals
+            ;Inputs: Left and right select signal bools in R0 & R1
+            ;Output: GPIO initalized for writes to left or right signals
+            ;Regmod: None
+            
+            ;Save registers
+            PUSH    {R2-R4}
+            
+            ;Instantiations
+            MOVS    R4,#0           ;Master register to be ored with turn on values
+                
+            CMP     R0,#TRUE        ;Check if R0(Left) == True
+            BNE     checkRight      ;If != True, skip next section
+            
+            ;Mask R4 with Pin 1 mask
+setLeftTS   MOVS 	R3,#PIN1_OUT    
+			ORRS    R4,R4,R3
+
+checkRight  CMP     R1,#TRUE        ;Check if R1(Right) == True
+            BNE     endSetSignal    ;If != True, skip next section
+
+            ;Mask R4 with Pin 2 mask
+TurnRightTS	
+			MOVS 	R3,#PIN2_OUT
+			ORRS    R4,R4,R3
+
+            ;Set output to PDOR, then restore and return
+endSetSignal
+            LDR		R2,=PTA_PDOR 
+            STR     R4,[R2,#0]
+            POP     {R2-R4}
+            BX      LR
+
+
 			EXPORT initPTAInterrupt
 initPTAInterrupt
 			;Subroutine initalizes Port A Pins 4 and 5 for interrupts
@@ -326,17 +361,13 @@ setFalse	MOVS	R1,#FALSE
 			;Pin identified by the PINX_OUT mask.
 			
 TurnRight	LDR 	R0,=PTA_PDOR
-			;LDR	R1,[R0,#0]		;Debug
 			MOVS 	R1,#PIN2_OUT
 			STRB 	R1,[R0,#0]
-			;LDR	R2,[R0,#0]		;Debug
 			B		clearPTAInt
 
 TurnLeft	LDR		R0,=PTA_PDOR
-			;LDR	R1,[R0,#0]		;Debug
 			MOVS 	R1,#PIN1_OUT
 			STRB 	R1,[R0,#0]
-			;LDR	R2,[R0,#0]		;Debug
 
 			
 			;Clear the interrupt so that when leaving the ISR, interrupt is not triggered

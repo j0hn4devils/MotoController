@@ -3,19 +3,34 @@
 /*Written by: John DeBrino*/
 /*Revision Date: 1/25/2016*/
 
-/*								Includes							*/
+/*								Includes							  */
 #include "Controller.h"
 #include "Animations.h"
-/*								Defines 							*/
-#define LED_STRIP_SIZE	144						 /* # of LEDs in strip */
+
+/*								Defines 							  */
+#define LED_STRIP_SIZE	42		/* # of LEDs in strip */
 #define TRUE 1
-/*								Colors								*/
-/*						 (BGR Values)							*/
+#define FALSE 0
+
+/*								Colors								  */
+/*						 (BGR Values)							      */
 #define WHITE	(0x00FFFFFEu)
 #define AMBER	(0x0000C2FFu)
 #define	NOCOLOR	(0x00000000u)
 
-/*								  Code								*/
+/*								  Code								  */
+
+/*initRunningLights*/
+/*Initializes the running lights for normal operation*/
+/*Inputs: takes no inputs*/
+/*Outputs: Initalizes the running lights to white*/
+void initRunningLights(void)
+{
+    setSignal(TRUE,TRUE);   /*Allow transmit to both LED strips*/
+    setStrip(LED_STRIP_SIZE, WHITE, 0xFF); /*Set the strips */
+    setSignal(FALSE,FALSE); /*Cleanup*/
+}
+
 
 /*Main code; runs on startup*/
 int main(void)
@@ -31,7 +46,11 @@ int main(void)
 	initSPI();
 	initPITInterrupt();
 	initPTAInterrupt();
-
+    
+    /*Remove the following initialization on implementation to main*/
+    /*Move to the "if (Running == True)" statement*/
+    initRunningLights();
+    
 	__asm("CPSIE	I");
 
 	/*Main loop*/
@@ -43,12 +62,8 @@ int main(void)
 		/*Sequential pattern until the bool is reset to false*/
 		if (Turning == TRUE)
 		{
-			ReverseSequentialPattern(144,&Turning);
-			setStrip(144,WHITE,0x30);
-		}
-		else
-		{
-			setStrip(144,NOCOLOR,0x71);
+			ReverseSequentialPattern(42,&Turning);
+			setStrip(42,WHITE,0x0F);
 		}
 
 	}
