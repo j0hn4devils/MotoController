@@ -23,7 +23,7 @@
 /*Input: Number of LEDs in strip, Condition for animation to loop until false*/
 /*Output: LED Strip Colors*/
 
-void sequentialPattern(int NumLED, char *TruthCondition)
+void sequentialPattern(int NumLED, char *TruthCondition, char Speed)
 {
 	int c = 0; 				/*Loop counter for amber loop*/
 	int loop = 1; 		/*Loop counter for main loop*/
@@ -31,7 +31,7 @@ void sequentialPattern(int NumLED, char *TruthCondition)
 	int setamber = (NumLED/2 + NumLED/4); /*Set 3/4 LEDS to Amber*/
 
 	/*Set baud for appropriate speed*/
-	setSPIBaud(0x32);
+	setSPIBaud(Speed);
 
 	/*Separate allocation in memory?*/
   while(*TruthCondition == TRUE)
@@ -78,7 +78,7 @@ void sequentialPattern(int NumLED, char *TruthCondition)
 }
 
 
-void ReverseSequentialPattern(int NumLED, char *TruthCondition)
+void reverseSequentialPattern(int NumLED, char *TruthCondition, char Speed)
 {
   int b = 0;                            /*Deficit loop counter*/
 	int c = 0; 				                    /*Loop counter for amber loop*/
@@ -87,7 +87,7 @@ void ReverseSequentialPattern(int NumLED, char *TruthCondition)
   int loops = NumLED+setamber; 		      /*Maximum number of loops*/
 
 	/*Set baud for appropriate speed*/
-	setSPIBaud(0x42);
+	setSPIBaud(Speed);
   while(*TruthCondition == TRUE)
   {
   startFrame();
@@ -146,6 +146,7 @@ void reverseSetStrip(int NumLED, int Color, int Speed)
 {
     int iterator = 0;
     int deficit = NumLED-1;
+    int temp = 0;
     
     setSPIBaud(Speed);
     
@@ -155,10 +156,11 @@ void reverseSetStrip(int NumLED, int Color, int Speed)
         {
             setColor(NOCOLOR);
         }
-        for(int temp = deficit; temp <= NumLED; deficit++)
+        for(; temp <= NumLED; deficit++)
         {
-            setColor(WHITE);
+            setColor(Color);
         }
+    deficit--;
     }
 }
 

@@ -23,7 +23,7 @@ MIXED_ASM_C SETL {TRUE}
 
 PTA_PCR4_INT_MASK	EQU	0x00000010	;Mask to determine interrupt is Pin 4
 PTA_PCR5_INT_MASK	EQU	0x00000020	;Mask to determine interrupt is Pin 5
-PTA_INT_MASK		EQU 0x010B0103 	;Mask to enable interupts on rising and falling edge for GPIO
+PTA_INT_MASK		EQU 0x010B0102 	;Mask to enable interupts on rising and falling edge for GPIO
 PIN1_OUT 			EQU 0x02		;Mask for PDOR/PDDR to output 1 on Pin 1
 PIN2_OUT 			EQU 0x04 		;Mask for PDOR/PDDR to output 1 on Pin 2
 GPIO_OUT_MASK		EQU 0x01000100	;Mask to enable GPIO function
@@ -372,9 +372,7 @@ TurnLeft	LDR		R0,=PTA_PDOR
 			
 			;Clear the interrupt so that when leaving the ISR, interrupt is not triggered
 			
-clearPTAInt LDR		R1,[R0,#0]
-
-			;Upon interrupt, the bits in the ISF are set to 1, and they are w1c
+clearPTAInt ;Upon interrupt, the bits in the ISF are set to 1, and they are w1c
 			;So loading the register values and writing them back to the register
 			;should clear all interrupts
 

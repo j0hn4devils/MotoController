@@ -8,7 +8,7 @@
 #include "Animations.h"
 
 /*								Defines 							  */
-#define LED_STRIP_SIZE	42		/* # of LEDs in strip */
+#define LED_STRIP_SIZE	43		/* # of LEDs in strip */
 #define TRUE 1
 #define FALSE 0
 
@@ -26,6 +26,7 @@
 /*Outputs: Initalizes the running lights to white*/
 void initRunningLights(void)
 {
+    
     setSignal(TRUE,TRUE);   /*Allow transmit to both LED strips*/
     setStrip(LED_STRIP_SIZE, WHITE, 0xFF); /*Set the strips */
     setSignal(FALSE,FALSE); /*Cleanup*/
@@ -62,8 +63,8 @@ int main(void)
 		/*Sequential pattern until the bool is reset to false*/
 		if (Turning == TRUE)
 		{
-			ReverseSequentialPattern(42,&Turning);
-			setStrip(42,WHITE,0x0F);
+			reverseSequentialPattern(LED_STRIP_SIZE,&Turning,0x43);
+			setStrip(LED_STRIP_SIZE,WHITE,0x0F);
 		}
 
 	}
