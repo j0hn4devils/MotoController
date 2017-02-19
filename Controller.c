@@ -25,10 +25,21 @@
 /*Inputs: takes no inputs*/
 /*Outputs: Initalizes the running lights to white*/
 void initRunningLights(void)
-{
-    
+{    
     setSignal(TRUE,TRUE);   /*Allow transmit to both LED strips*/
     setStrip(LED_STRIP_SIZE, WHITE, 0xFF); /*Set the strips */
+    setSignal(FALSE,FALSE); /*Cleanup*/
+}
+
+
+/*turnOffLights*/
+/*Turns off lights for when bike is off*/
+/*Inputs: takes no inputs*/
+/*Outputs: Initalizes the running lights to OFF*/
+void turnOffLights(void)
+{    
+    setSignal(TRUE,TRUE);   /*Allow transmit to both LED strips*/
+    setStrip(LED_STRIP_SIZE, NOCOLOR, 0xFF); /*Set the strips */
     setSignal(FALSE,FALSE); /*Cleanup*/
 }
 
@@ -36,36 +47,61 @@ void initRunningLights(void)
 /*Main code; runs on startup*/
 int main(void)
 {
-	/*int x = 0;
-	int y = 0;
-	int z = 0;
-	*/
-
+	int FirstLoop = TRUE;   /*Used to tell if first loop since bike has been powered on*/
+  
 	/*Board initializations*/
  	__asm("CPSID	I");
 
 	initSPI();
 	initPITInterrupt();
 	initPTAInterrupt();
-    
-    /*Remove the following initialization on implementation to main*/
-    /*Move to the "if (Running == True)" statement*/
-    initRunningLights();
-    
+  
 	__asm("CPSIE	I");
 
-	/*Main loop*/
-
-	/*Main is currently being used to test features as they are being developed*/
-	for(;;)
-	{
-		/*If the bool for turning has been set for true, run the*/
-		/*Sequential pattern until the bool is reset to false*/
-		if (Turning == TRUE)
-		{
-			reverseSequentialPattern(LED_STRIP_SIZE,&Turning,0x43);
-			setStrip(LED_STRIP_SIZE,WHITE,0x0F);
-		}
-
-	}
+  /*Do forever*/
+  for(;;)
+  {
+    
+  /*Execute while bike is on*/  
+	while(IsOn == TRUE)
+  {
+    /*If its the first loop, run the init pattern*/
+    if(FirstLoop == TRUE)
+    {
+      initRunningLights();
+      FirstLoop = FALSE;
+    }
+    /*Execute if turn signal is on*/
+    while(Turning == TRUE)
+    {
+      /*Send the reverse pattern to the strips*/
+      reverseSequentialPattern(LED_STRIP_SIZE,&Turning,0x42);
+      /*__asm("CPSID    I")*/
+      setStrip(LED_STRIP_SIZE,WHITE,0x42);
+      /*__asm("CPSIE    I")*/
+    }
+    
+  }
+  /*Reset first loop identifier*/
+  FirstLoop = TRUE;
+  
+  /*Execute while bike is off*/
+  while (IsOn == FALSE)
+  {
+    /*If it's the first loop, turn off the lights, please*/
+    if (FirstLoop == TRUE)
+    {
+      turnOffLights();
+      FirstLoop = FALSE;
+    }
+    
+    
+    /*Alarm like stuff to be implemented at a later date*/
+    /*No timeframe will be given as I have been very busy*/
+  }
+  
+  /*Reset first loop identifier*/
+  FirstLoop = TRUE;
+  
+  }
 }

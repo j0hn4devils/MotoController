@@ -7,4 +7,3 @@ extern void sequentialPattern(int NumLED, char *TruthCondition, char Speed);
 extern void reverseSequentialPattern(int NumLED, char *TruthCondition, char Speed);
 extern void setStrip(int NumLED, int Color, int Speed);
 extern void reverseSetStrip(int NumLED, int Color, int Speed);
-extern void slidePattern(int NumLED);

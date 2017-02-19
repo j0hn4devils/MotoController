@@ -5,6 +5,8 @@
 
 /*						Variables					*/
 extern char Turning;
+extern char IsOn;
+
 
 /*						typedef						*/
 typedef int Int32;
@@ -20,6 +22,7 @@ void wait(int ms);
 void setSPIBaud(int BaudRate);
 void initPTAInterrupt(void);
 void setSignal(char LeftTurnBool, char RightTurnBool);
+
 
 /*					    Lighting.s					*/
 void setColor(int Color);

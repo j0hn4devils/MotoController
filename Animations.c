@@ -22,18 +22,19 @@
 /*Displays the turning pattern to the LED strip selected by microcontroller*/
 /*Input: Number of LEDs in strip, Condition for animation to loop until false*/
 /*Output: LED Strip Colors*/
+/*Problems: Pattern is inefficient, Pattern is not needed for current implementation*/
 
 void sequentialPattern(int NumLED, char *TruthCondition, char Speed)
 {
-	int c = 0; 				/*Loop counter for amber loop*/
-	int loop = 1; 		/*Loop counter for main loop*/
-	int deficit = 0; /*Number of LEDS to set to NOCOLOR at beginning of transmission*/
+	int c = 0; 				                    /*Loop counter for amber loop*/
+	int loop = 1; 		                    /*Loop counter for main loop*/
+	int deficit = 0;                      /*Number of LEDS to set to NOCOLOR at beginning of transmission*/
 	int setamber = (NumLED/2 + NumLED/4); /*Set 3/4 LEDS to Amber*/
 
 	/*Set baud for appropriate speed*/
 	setSPIBaud(Speed);
 
-	/*Separate allocation in memory?*/
+	/*Loop until the truth condition is set to FALSE via interrupt*/
   while(*TruthCondition == TRUE)
 	{
 		
@@ -47,7 +48,8 @@ void sequentialPattern(int NumLED, char *TruthCondition, char Speed)
 			setColor(NOCOLOR);
 		}
 			
-		/*Loop LEDS to recieve amber color, set deficit*/
+		/*Loop LEDS to recieve amber color, set deficit */
+    /*(Number of LEDs to recieve no color before AMBER LEDs are written)*/
 		for (c = 0; c <= loop; c++)
 		{
 			if (c <= setamber)
@@ -63,17 +65,13 @@ void sequentialPattern(int NumLED, char *TruthCondition, char Speed)
 				}
 			}
 		}
-			
-		/*Transmit start frame as end frame, as APA102 Protocol doesn't differentiate*/
-		/*an end frame from a white color transfer*/
-		startFrame();
+		/*Increment the loop number; reset if > the number of LEDs and the # to be set to amber*/
 		loop++;
 		if (loop > (setamber + NumLED))
 		{
 			loop = 1;
 		}
 	}
-	startFrame();
 	return;
 }
 
@@ -82,38 +80,58 @@ void reverseSequentialPattern(int NumLED, char *TruthCondition, char Speed)
 {
   int b = 0;                            /*Deficit loop counter*/
 	int c = 0; 				                    /*Loop counter for amber loop*/
-	signed int deficit = NumLED-1;               /*Number of LEDS to set to NOCOLOR at beginning of transmission*/
+	signed int deficit = NumLED-1;        /*Number of LEDS to set to NOCOLOR at beginning of transmission*/
 	int setamber = (NumLED/2 + NumLED/4); /*Set 3/4 LEDS to Amber*/
   int loops = NumLED+setamber; 		      /*Maximum number of loops*/
 
 	/*Set baud for appropriate speed*/
 	setSPIBaud(Speed);
+  /*While the truth condition is satisfied, loop is executed*/
   while(*TruthCondition == TRUE)
   {
-  startFrame();
+    /*Send a start frame to begin transmission*/
+    startFrame();
   
-  for (c = 0; c <= deficit; c++)  
-  {
-    setColor(NOCOLOR);
-  }
-  deficit--;
-  for (b=0; b<= setamber;b++)
-  {
-    setColor(AMBER);
-  }
-	if (deficit <= 0)
-		{setamber--;}
-	for (loops = 0; loops <= 144; loops++)
-        {setColor(NOCOLOR);}
-  if (deficit+setamber <= 0)
-  {
-		if (setamber ==0)
-		{
-    deficit=NumLED-1;
-		setamber=(NumLED/2)+(NumLED/4);
-		}
-  }
-  startFrame();
+    /*loop LEDs to recieve no color*/
+    /*This is the deficit, and decreases every iteration*/
+    for (c = 0; c <= deficit; c++)  
+    {
+      setColor(NOCOLOR);
+    }
+    /*Decrement the deficit (thats pleasing to say outloud)*/
+    deficit--;
+    
+    /*Loop LEDs to recieve the amber color*/
+    for (b=0; b<= setamber;b++)
+    {
+      setColor(AMBER);
+    }
+    
+    /*Of the deficit is below zero, start subtracting from setAmber*/
+    /*This causes the sliding motion*/
+    
+    if (deficit <= 0)
+    {
+      setamber--;
+    }
+    
+    /*This is currently a brute force way to set LEDs that are after*/
+    /*the amber ones to off. A better implementation will be thought of later on*/
+    for (loops = 0; loops <= 144; loops++)
+          {setColor(NOCOLOR);}
+          
+    /*This statement catches the end of the animation and resets variables to the defaults*/
+    if (deficit+setamber <= 0)
+    {
+      /*This is in here as the arithmetic was a bit dodgey during testing*/
+      /*This catch fixed any errors that were encountered*/
+      /*I assume this has something to do with negative arithmetic, but I don't know for sure*/
+      if (setamber ==0)
+      {
+        deficit=NumLED-1;
+        setamber=(NumLED/2)+(NumLED/4);
+      }
+    }
   }
   
 
@@ -131,17 +149,20 @@ void setStrip(int NumLED, int Color, int Speed)
 	/*Set baud rate for fastest transfer speed*/
 	setSPIBaud(Speed);
     
-    /*Send start frame*/
-    startFrame();
+  /*Send start frame*/
+  startFrame();
 	
+  /*Send the color over the strip*/
 	for(; iterator <= NumLED; iterator++)
 	{
 		setColor(Color);
-	}
-    
+	} 
 	return;	
 }
 
+
+/*In development*/
+/*Goal is to set a strip from the last LED to the first LED*/
 void reverseSetStrip(int NumLED, int Color, int Speed)
 {
     int iterator = 0;
@@ -162,27 +183,4 @@ void reverseSetStrip(int NumLED, int Color, int Speed)
         }
     deficit--;
     }
-}
-
-/*slidePattern*/
-/*Alternate LED animation that produces a sliding pattern*/
-/*Input: Number of LEDs in strip*/
-/*Output: LED animation*/
-
-void slidePattern(int NumLED)
-{
-	int AmberIterator = 0;
-	int ClearIterator = 0;
-	
-	/*Set baud rate low for proper animation*/
-	setSPIBaud(0x33);
-	
-	for(; AmberIterator <= NumLED; AmberIterator++)
-	{
-		setColor(AMBER);
-	}
-	for(; ClearIterator <= NumLED; ClearIterator++)
-	{
-		setColor(NOCOLOR);
-	}
 }
