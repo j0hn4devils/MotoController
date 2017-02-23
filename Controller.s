@@ -23,6 +23,7 @@ MIXED_ASM_C SETL {TRUE}
 
 PTA_PCR4_INT_MASK	EQU	0x00000010	;Mask to determine interrupt is Pin 4
 PTA_PCR5_INT_MASK	EQU	0x00000020	;Mask to determine interrupt is Pin 5
+PTA_PCR6_INT_MASK	EQU	0x00000040	;Mask to determine interrupt is Pin 6
 PTA_PCR7_INT_MASK	EQU	0x00000080	;Mask to determine interrupt is Pin 7
 PTA_RF_INT_MASK		EQU 0x010B0102 	;Mask to enable interupts on rising and falling edge for GPIO
 PTA_R_INT_MASK		EQU 0x01090102 	;Mask to enable interupts on rising edge ONLY for GPIO
@@ -274,6 +275,7 @@ initPTAInterrupt
 			STR		R1,[R0,#0]
 			STR		R1,[R0,#4]	            ;Instead of loading PCR5, used PCR4 offset by 4
             LDR     R1,=PTA_RF_INT_MASK     ;Load new mask to allow rising and falling edge interrupt
+			STR		R1,[R0,#8]				;Instead of loading PCR6, use 8 offset to access
             STR     R1,[R0,#0x0C]           ;Instead of loading PCR7, Use 0x0C offset to access 
 			
 			;Multiplex pins 1 and 2 for GPIO Output
@@ -330,7 +332,9 @@ PTA_IRQ		;IRQ Handler for Port A interrupts
 			;Inputs
 			;Pin4 will be legacy left turn signal
 			;Pin5 will be legacy right turn signal
+			;Pin6 will be the input from the front aux circuit
             ;Pin7 will be the input from relay
+			
 			;Outputs
 			;Pin1 will be new left turn signal
 			;Pin2 will be new right turn signal
@@ -395,7 +399,7 @@ TurnLeft	LDR		R1,=PTA_PDOR
             ;Check if the bike is on. This input is arbitrarily mapped to PTA7
             
 checkOn     LDR     R1,[R0,#0]              ;Load ISF Data
-            LDR     R2,=PTA_PCR7_INT_MASK   ;Load the interrupt mask
+            LDR     R2,=PTA_PCR6_INT_MASK   ;Load the interrupt mask
             ANDS    R2,R2,R1                ;Ands Together
             BNE     clearPTAInt             ;If not equal, clear the interrupts
             
