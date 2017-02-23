@@ -11,10 +11,15 @@ This project implements the running light / turn signal combo using an RGB LED s
 Controller.s Holds all of the initalization code that is called in the main in Controller.c, as well as Interrupt Service Routines (ISRs) and a few utility functions, such as setSPIBaud(). The main ISR of importance is the PORTA ISR. This is the ISR that drives the modes and status of the KL46. Before further explaination, the pinouts of the PORTA pins are as follows:
 
 PTA16: Multiplexed for MOSI for SPI0
+
 PTA15: Multiplexed for SCK for SPI0
+
 PTA6:  Rising/Falling sensitive input for determining if bike is on
+
 PTA7:  Rising/Falling sensitive input for determining if the turn signals are activated
+
 PTA5&4:Rising sensitive inputs for determining which turn signal is activated
+
 PTA2&1:Outputs for hardware MUX to control only certain strips with 1 SPI
 
 PTA16 and 15 are self explanatory
