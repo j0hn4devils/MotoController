@@ -1,7 +1,7 @@
 /*Animations.c*/
 /*Uses ASM Libraries to drive various LED animations*/
 /*Written by: John DeBrino*/
-/*Revision Date: 2/1/2016*/
+/*Revision Date: 2/24/2016*/
 
 /*								Includes							*/
 #include "Controller.h"
@@ -18,9 +18,9 @@
 
 /*								  Code								*/
 
-/*turnPattern*/
+/*sequentialPattern*/
 /*Displays the turning pattern to the LED strip selected by microcontroller*/
-/*Input: Number of LEDs in strip, Condition for animation to loop until false*/
+/*Input: Number of LEDs in strip, Condition for animation to loop until false, speed of transfer*/
 /*Output: LED Strip Colors*/
 /*Problems: Pattern is inefficient, Pattern is not needed for current implementation*/
 
@@ -76,16 +76,21 @@ void sequentialPattern(int NumLED, char *TruthCondition, char Speed)
 }
 
 
+/*reverseSequentialPattern*/
+/*Displays the turning pattern to the LED strip selected by microcontroller; pattern is reverse of the normal sequential one*/
+/*Input: Number of LEDs in strip, Condition for animation to loop until false, speed of transfer*/
+/*Output: LED Strip Colors*/
 void reverseSequentialPattern(int NumLED, char *TruthCondition, char Speed)
 {
-  int b = 0;                            /*Deficit loop counter*/
-	int c = 0; 				                    /*Loop counter for amber loop*/
+	int b = 0;                            /*Deficit loop counter*/
+	int c = 0; 				              /*Loop counter for amber loop*/
 	signed int deficit = NumLED-1;        /*Number of LEDS to set to NOCOLOR at beginning of transmission*/
 	int setamber = (NumLED/2 + NumLED/4); /*Set 3/4 LEDS to Amber*/
-  int loops = NumLED+setamber; 		      /*Maximum number of loops*/
+	int loops = NumLED+setamber; 		  /*Maximum number of loops*/
 
 	/*Set baud for appropriate speed*/
 	setSPIBaud(Speed);
+	
   /*While the truth condition is satisfied, loop is executed*/
   while(*TruthCondition == TRUE)
   {
@@ -107,7 +112,7 @@ void reverseSequentialPattern(int NumLED, char *TruthCondition, char Speed)
       setColor(AMBER);
     }
     
-    /*Of the deficit is below zero, start subtracting from setAmber*/
+    /*If the deficit is below zero, start subtracting from setAmber*/
     /*This causes the sliding motion*/
     
     if (deficit <= 0)
@@ -117,7 +122,7 @@ void reverseSequentialPattern(int NumLED, char *TruthCondition, char Speed)
     
     /*This is currently a brute force way to set LEDs that are after*/
     /*the amber ones to off. A better implementation will be thought of later on*/
-    for (loops = 0; loops <= 144; loops++)
+    for (loops = 0; loops <= NumLED; loops++)
           {setColor(NOCOLOR);}
           
     /*This statement catches the end of the animation and resets variables to the defaults*/
@@ -133,30 +138,31 @@ void reverseSequentialPattern(int NumLED, char *TruthCondition, char Speed)
       }
     }
   }
-  
-
 }
+
+
 /*setStrip*/
 /*Sets entire strip to desired color*/
-/*Input: Size of LED strip (in LEDs)*/
+/*Input: Size of LED strip (in LEDs), Color of LEDs, Speed of Transfer*/
 /*Output: Cleared LED strip*/
 
 void setStrip(int NumLED, int Color, int Speed)
 {
 
-	int iterator = 0;
+	int iterator = 0;	/*Instantiate and iterator*/
 
 	/*Set baud rate for fastest transfer speed*/
 	setSPIBaud(Speed);
     
-  /*Send start frame*/
-  startFrame();
+	/*Send start frame*/
+	startFrame();
 	
-  /*Send the color over the strip*/
+	/*Send the color over the strip*/
 	for(; iterator <= NumLED; iterator++)
 	{
 		setColor(Color);
 	} 
+	/*Done with transfer*/
 	return;	
 }
 

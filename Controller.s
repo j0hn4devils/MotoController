@@ -1,9 +1,9 @@
 				TTL			Controller.s
 ;-----------------------------------------------------
-;Initialize background tasks (UART,TPM,etc)
+;Initialize/Control background tasks (PORTA,SPI,etc)
 ;Written by John DeBrino
 ;Sources referrenced: Roy Melton
-;Revision Date: 2/1/2016
+;Revision Date: 2/24/2016
 ;-----------------------------------------------------
 ;		  Assembler Directives and Includes
 
@@ -150,10 +150,7 @@ initPITInterrupt
 PIT_ISR
 PIT_IRQHandler
 			;PIT Interrupt Service Routine
-			;Final features not yet set in stone
-			;Current plan is to set the LED color on interrupt
-			;This will emulate if the shift on the LEDs was
-			;done at a 50Hz rate
+			;Not used YET
 			;Input: None (ISR)
 			;Output: Count incremented, color set (if bool; don't set a color if bike is off)
 			;Regmod: None
@@ -287,7 +284,7 @@ initPTAInterrupt
 			;Init Output
 			LDR		R0,=PTA_PDOR
 			MOVS	R1,#0
-			STR		R1,[R0,#0]
+			STR		R1,[R0,#0]		;Store 0, so no pins are initalized with output
 			
 			;Set GPIO Pins as output
 			LDR		R0,=PTA_PDDR
@@ -442,6 +439,7 @@ Count	SPACE	WORD	;Allocate word to count PIT interrupts
 Turning SPACE	BYTE	;Allocate byte for Turning boolean (True if turn signal activated)
         EXPORT  IsOn
 IsOn    SPACE   BYTE    ;Boolean for if bike is on
+
 		ALIGN		;Word align
 
 ;------------------------------------------------------

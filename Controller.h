@@ -1,7 +1,7 @@
 /*Header for Controller.c*/
 /*Allows access to ASM Libraries*/
 /*Written by: John DeBrino*/
-/*Revision Date: 1/25/2016*/
+/*Revision Date: 2/24/2016*/
 
 /*						Variables					*/
 extern char Turning;
@@ -11,7 +11,7 @@ extern char IsOn;
 /*						typedef						*/
 typedef int Int32;
 typedef short int Int16;
-typedef char	int8;
+typedef char Int8;
 typedef unsigned int UInt32;
 
 

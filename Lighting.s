@@ -3,7 +3,7 @@
 ;Lighting controls library NXP MKL46256XXXX
 ;Written by John DeBrino
 ;Sources referrenced: Roy Melton
-;Revision Date: 2/1/2016
+;Revision Date: 2/24/2016
 
 ;-----------------------------------------------------
 ;		  Assembler Directives and Includes

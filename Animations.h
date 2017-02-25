@@ -1,7 +1,7 @@
 /*Header for Animations.c*/
 /*Allows access of Animations functions in Controller*/
 /*Written by: John DeBrino*/
-/*Revision Date: 1/25/2016*/
+/*Revision Date: 2/24/2017*/
 
 extern void sequentialPattern(int NumLED, char *TruthCondition, char Speed);
 extern void reverseSequentialPattern(int NumLED, char *TruthCondition, char Speed);

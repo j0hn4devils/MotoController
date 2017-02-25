@@ -1,7 +1,7 @@
 /*Controller.c*/
 /*Uses ASM Libraries to perform desired functions*/
 /*Written by: John DeBrino*/
-/*Revision Date: 1/25/2016*/
+/*Revision Date: 2/24/2016*/
 
 /*								Includes							  */
 #include "Controller.h"
@@ -13,7 +13,7 @@
 #define FALSE 0
 
 /*								Colors								  */
-/*						 (BGR Values)							      */
+/*						     (BGR Values)							  */
 #define WHITE	(0x00FFFFFEu)
 #define AMBER	(0x0000C2FFu)
 #define	NOCOLOR	(0x00000000u)
@@ -53,7 +53,7 @@ int main(void)
  	__asm("CPSID	I");
 
 	initSPI();
-	initPITInterrupt();
+	/*initPITInterrupt();*/
 	initPTAInterrupt();
   
 	__asm("CPSIE	I");
