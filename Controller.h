@@ -22,6 +22,7 @@ void wait(int ms);
 void setSPIBaud(int BaudRate);
 void initPTAInterrupt(void);
 void setSignal(char LeftTurnBool, char RightTurnBool);
+void initVars(void);
 
 
 /*					    Lighting.s					*/

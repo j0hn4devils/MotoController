@@ -13,7 +13,7 @@
 #define FALSE 0
 
 /*								Colors								  */
-/*						     (BGR Values)							  */
+/*				     (BGR Values)							  */
 #define WHITE	(0x00FFFFFEu)
 #define AMBER	(0x0000C2FFu)
 #define	NOCOLOR	(0x00000000u)
@@ -47,7 +47,7 @@ void turnOffLights(void)
 /*Main code; runs on startup*/
 int main(void)
 {
-	int FirstLoop = TRUE;   /*Used to tell if first loop since bike has been powered on*/
+	int FirstLoop = TRUE;   /*Used to tell if first loop since bike has been powered on/off*/
   
 	/*Board initializations*/
  	__asm("CPSID	I");
@@ -55,6 +55,7 @@ int main(void)
 	initSPI();
 	/*initPITInterrupt();*/
 	initPTAInterrupt();
+	initVars();
   
 	__asm("CPSIE	I");
 
@@ -75,9 +76,9 @@ int main(void)
     while(Turning == TRUE)
     {
       /*Send the reverse pattern to the strips*/
-      reverseSequentialPattern(LED_STRIP_SIZE,&Turning,0x42);
+      reverseSequentialPattern(LED_STRIP_SIZE,&Turning,0x44);
       /*__asm("CPSID    I")*/
-      setStrip(LED_STRIP_SIZE,WHITE,0x42);
+      setStrip(LED_STRIP_SIZE,WHITE,0x45);
       /*__asm("CPSIE    I")*/
     }
     

@@ -27,8 +27,8 @@ PTA_PCR6_INT_MASK	EQU	0x00000040	;Mask to determine interrupt is Pin 6
 PTA_PCR7_INT_MASK	EQU	0x00000080	;Mask to determine interrupt is Pin 7
 PTA_RF_INT_MASK		EQU 0x010B0102 	;Mask to enable interupts on rising and falling edge for GPIO
 PTA_R_INT_MASK		EQU 0x01090102 	;Mask to enable interupts on rising edge ONLY for GPIO
-PIN1_OUT 			EQU 0x02		;Mask for PDOR/PDDR to output 1 on Pin 1
-PIN2_OUT 			EQU 0x04 		;Mask for PDOR/PDDR to output 1 on Pin 2
+PIN1_OUT 			EQU 0x01		;Mask for PDOR/PDDR to output 1 on Pin 1
+PIN2_OUT 			EQU 0x02 		;Mask for PDOR/PDDR to output 1 on Pin 2
 GPIO_OUT_MASK		EQU 0x01000100	;Mask to enable GPIO function
 
 ;-----------------------------------------------------
@@ -84,6 +84,7 @@ initSPI
 		LDR		R0,=SPI_C2	;Load C2 address
 		MOVS	R1,#C2_16BIT	;Load mask to ensure 8 bit operation
 		STRB	R1,[R0,#0]	;Store mask at C2
+		
 
 		;Restore and return
 		POP		{R0-R2}
@@ -349,12 +350,16 @@ PTA_IRQ		;IRQ Handler for Port A interrupts
 
 			;R0-R3 auto pushed
 
+			;Move the isOn code here?
+			;I honestly haven't looked at this for a while but I feel as if that will work
+
             ;Check if Relay interrupt
 relayInt    LDR     R0,=PTA_ISF             ;Load the ISF to check status flags
             LDR     R1,[R0,#0]              ;Load ISF data
             LDR     R2,=PTA_PCR7_INT_MASK   ;Load Pin7 int mask
             ANDS    R1,R1,R2                ;Mask to see if same
-            BNE     checkSignal             ;If not, check if signal interrupt
+            CMP		R1,R2
+			BNE		checkSignal
             
             ;Set the turning variable
 setTurning  LDR     R1,=Turning             ;Load in R1 to preserve ISF in R0
@@ -373,12 +378,14 @@ setFalse	MOVS	R2,#FALSE
 			;Read ISF and Decode Turn signal out via Hardware decoder
 			;(use other port A pins for this function to reduce power use)
 checkSignal	;ISF already loaded
-			LDR		R1,[R0,#0]              ;Load ISF data
+                                                                        			LDR		R1,[R0,#0]              ;Load ISF data
 			LDR		R2,=PTA_PCR4_INT_MASK   ;Now load PCR4 interrupt mask
-			ANDS	R2,R2,R1                ;And them together
+			ANDS	R2,R1,R2                ;And them together
+			CMP 	R2,R1
 			BEQ		TurnLeft                ;And if they're the same, turn left!
             LDR     R2,=PTA_PCR5_INT_MASK   ;Or check if PCR5
             ANDS    R2,R2,R1                ;Actual check step
+			CMP		R2,R1
             BNE     checkOn                 ;If not a right interrupt, check if bike is actually on
 
 			;For TurnLeft/Right, PDOR is written with the bit that enables the
@@ -398,6 +405,7 @@ TurnLeft	LDR		R1,=PTA_PDOR
 checkOn     LDR     R1,[R0,#0]              ;Load ISF Data
             LDR     R2,=PTA_PCR6_INT_MASK   ;Load the interrupt mask
             ANDS    R2,R2,R1                ;Ands Together
+			CMP		R1,R2
             BNE     clearPTAInt             ;If not equal, clear the interrupts
             
             LDR     R1,=IsOn                ;Load On boolean
@@ -407,7 +415,7 @@ checkOn     LDR     R1,[R0,#0]              ;Load ISF Data
             BNE     setOff                  ;If not false, toggle to bike is off
 
             ;The following code block toggles IsOn between true and false,
-            ;then segways into clearing the interrupt(s)
+            ;then segues into clearing the interrupt(s)
 setOn		MOVS	R2,#TRUE
 			STRB	R2,[R1,#0]
 			B		clearPTAInt
@@ -427,6 +435,23 @@ clearPTAInt ;Upon interrupt, the bits in the ISF are set to 1, and they are w1c
 			BX		LR
 
 			ALIGN	;Word align
+			
+
+			EXPORT initVars
+initVars	;Initializes variables to 0
+			
+			PUSH	{R0-R2}
+			
+			LDR		R0, =Count
+			MOVS	R1, #0
+			STR		R1,[R0,#0]
+			LDR		R0, =Turning
+			STRB	R1,[R0,#0]
+			LDR		R0,=IsOn
+			STRB	R1,[R0,#0]
+			
+			POP		{R0-R2}
+			BX		LR
 ;------------------------------------------------------
 ;					Variables
 
