@@ -25,10 +25,10 @@
 /*Inputs: takes no inputs*/
 /*Outputs: Initalizes the running lights to white*/
 void initRunningLights(void)
-{    
-    setSignal(TRUE,TRUE);   /*Allow transmit to both LED strips*/
+{
+    setSignal(FALSE,FALSE);   /*Allow transmit to both LED strips*/
     setStrip(LED_STRIP_SIZE, WHITE, 0xFF); /*Set the strips */
-    setSignal(FALSE,FALSE); /*Cleanup*/
+    setSignal(TRUE,TRUE); /*Cleanup*/
 }
 
 
@@ -37,10 +37,10 @@ void initRunningLights(void)
 /*Inputs: takes no inputs*/
 /*Outputs: Initalizes the running lights to OFF*/
 void turnOffLights(void)
-{    
-    setSignal(TRUE,TRUE);   /*Allow transmit to both LED strips*/
+{
+    setSignal(FALSE,FALSE);   /*Allow transmit to both LED strips*/
     setStrip(LED_STRIP_SIZE, NOCOLOR, 0xFF); /*Set the strips */
-    setSignal(FALSE,FALSE); /*Cleanup*/
+    setSignal(TRUE,TRUE); /*Cleanup*/
 }
 
 
@@ -48,7 +48,7 @@ void turnOffLights(void)
 int main(void)
 {
 	int FirstLoop = TRUE;   /*Used to tell if first loop since bike has been powered on/off*/
-  
+
 	/*Board initializations*/
  	__asm("CPSID	I");
 
@@ -56,14 +56,14 @@ int main(void)
 	/*initPITInterrupt();*/
 	initPTAInterrupt();
 	initVars();
-  
+
 	__asm("CPSIE	I");
 
   /*Do forever*/
   for(;;)
   {
-    
-  /*Execute while bike is on*/  
+
+  /*Execute while bike is on*/
 	while(IsOn == TRUE)
   {
     /*If its the first loop, run the init pattern*/
@@ -81,11 +81,11 @@ int main(void)
       setStrip(LED_STRIP_SIZE,WHITE,0x45);
       /*__asm("CPSIE    I")*/
     }
-    
+
   }
   /*Reset first loop identifier*/
   FirstLoop = TRUE;
-  
+
   /*Execute while bike is off*/
   while (IsOn == FALSE)
   {
@@ -95,14 +95,14 @@ int main(void)
       turnOffLights();
       FirstLoop = FALSE;
     }
-    
-    
+
+
     /*Alarm like stuff to be implemented at a later date*/
     /*No timeframe will be given as I have been very busy*/
   }
-  
+
   /*Reset first loop identifier*/
   FirstLoop = TRUE;
-  
+
   }
 }

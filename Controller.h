@@ -4,8 +4,8 @@
 /*Revision Date: 2/24/2016*/
 
 /*						Variables					*/
-extern char Turning;
-extern char IsOn;
+extern volatile char Turning;
+extern volatile char IsOn;
 
 
 /*						typedef						*/
@@ -29,4 +29,3 @@ void initVars(void);
 void setColor(int Color);
 void startFrame(void);
 void endFrame(void);
-

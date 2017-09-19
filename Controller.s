@@ -27,8 +27,8 @@ PTA_PCR6_INT_MASK	EQU	0x00000040	;Mask to determine interrupt is Pin 6
 PTA_PCR7_INT_MASK	EQU	0x00000080	;Mask to determine interrupt is Pin 7
 PTA_RF_INT_MASK		EQU 0x010B0102 	;Mask to enable interupts on rising and falling edge for GPIO
 PTA_R_INT_MASK		EQU 0x01090102 	;Mask to enable interupts on rising edge ONLY for GPIO
-PIN1_OUT 			EQU 0x01		;Mask for PDOR/PDDR to output 1 on Pin 1
-PIN2_OUT 			EQU 0x02 		;Mask for PDOR/PDDR to output 1 on Pin 2
+PIN1_OUT 			EQU 0x02		;Mask for PDOR/PDDR to output 1 on Pin 1
+PIN2_OUT 			EQU 0x04 		;Mask for PDOR/PDDR to output 1 on Pin 2
 GPIO_OUT_MASK		EQU 0x01000100	;Mask to enable GPIO function
 
 ;-----------------------------------------------------
@@ -84,7 +84,7 @@ initSPI
 		LDR		R0,=SPI_C2	;Load C2 address
 		MOVS	R1,#C2_16BIT	;Load mask to ensure 8 bit operation
 		STRB	R1,[R0,#0]	;Store mask at C2
-		
+
 
 		;Restore and return
 		POP		{R0-R2}
@@ -163,16 +163,16 @@ PIT_IRQHandler
 			;No PUSH; R0-R3 auto pushed
 
 			LDR     R0,=Count           ;Load count address
-            LDR     R1,[R0,#0]          ;Load count data
+      LDR     R1,[R0,#0]          ;Load count data
 			ADDS    R1,R1,#1            ;Increment
-            STR     R1,[R0,#0]          ;Store new count
+      STR     R1,[R0,#0]          ;Store new count
 
 endPIT_ISR
 			;Write 1 to TIF
 			LDR     R0,=PIT_LDVAL0      ;Load CH0 base
 			LDR     R1,=TFLG_CLR   		;Load mask
 			STR     R1,[R0,#TFLG1]		;Store at offset
-			BX	LR
+			BX			LR
 
 
 
@@ -220,31 +220,31 @@ setSignal   ;Set signal allows manual setting of the two turn signals
             ;Inputs: Left and right select signal bools in R0 & R1
             ;Output: GPIO initalized for writes to left or right signals
             ;Regmod: None
-            
+
             ;Save registers
             PUSH    {R2-R4}
-            
+
             ;Instantiations
             MOVS    R4,#0           ;Master register to be ored with turn on values
-                
+
             CMP     R0,#TRUE        ;Check if R0(Left) == True
             BNE     checkRight      ;If != True, skip next section
-            
+
             ;Mask R4 with Pin 1 mask
-setLeftTS   MOVS 	R3,#PIN1_OUT    
-			ORRS    R4,R4,R3
+setLeftTS   MOVS 	R3,#PIN1_OUT
+						ORRS    R4,R4,R3
 
 checkRight  CMP     R1,#TRUE        ;Check if R1(Right) == True
             BNE     endSetSignal    ;If != True, skip next section
 
             ;Mask R4 with Pin 2 mask
-TurnRightTS	
+TurnRightTS
 			MOVS 	R3,#PIN2_OUT
 			ORRS    R4,R4,R3
 
             ;Set output to PDOR, then restore and return
 endSetSignal
-            LDR		R2,=PTA_PDOR 
+            LDR		R2,=PTA_PDOR
             STR     R4,[R2,#0]
             POP     {R2-R4}
             BX      LR
@@ -274,19 +274,19 @@ initPTAInterrupt
 			STR		R1,[R0,#4]	            ;Instead of loading PCR5, used PCR4 offset by 4
             LDR     R1,=PTA_RF_INT_MASK     ;Load new mask to allow rising and falling edge interrupt
 			STR		R1,[R0,#8]				;Instead of loading PCR6, use 8 offset to access
-            STR     R1,[R0,#0x0C]           ;Instead of loading PCR7, Use 0x0C offset to access 
-			
+            STR     R1,[R0,#0x0C]           ;Instead of loading PCR7, Use 0x0C offset to access
+
 			;Multiplex pins 1 and 2 for GPIO Output
 			LDR		R0,=PTA_PCR_1
 			LDR		R1,=GPIO_OUT_MASK
 			STR		R1,[R0,#0]
 			STR		R1,[R0,#4]	;Instead of loading PCR2, use PCR1 offset by 4
-			
+
 			;Init Output
 			LDR		R0,=PTA_PDOR
 			MOVS	R1,#0
 			STR		R1,[R0,#0]		;Store 0, so no pins are initalized with output
-			
+
 			;Set GPIO Pins as output
 			LDR		R0,=PTA_PDDR
 			MOVS	R1,#PIN1_OUT
@@ -332,11 +332,11 @@ PTA_IRQ		;IRQ Handler for Port A interrupts
 			;Pin5 will be legacy right turn signal
 			;Pin6 will be the input from the front aux circuit
             ;Pin7 will be the input from relay
-			
+
 			;Outputs
 			;Pin1 will be new left turn signal
 			;Pin2 will be new right turn signal
-            
+
             ;An explaination of implementation:
             ;Since relay is controlling the current flow In circut,
             ;the high pin will have 12v whenever any turn signal is activated
@@ -360,14 +360,14 @@ relayInt    LDR     R0,=PTA_ISF             ;Load the ISF to check status flags
             ANDS    R1,R1,R2                ;Mask to see if same
             CMP		R1,R2
 			BNE		checkSignal
-            
+
             ;Set the turning variable
 setTurning  LDR     R1,=Turning             ;Load in R1 to preserve ISF in R0
             LDR     R2,[R1,#0]              ;Var data now in R2
             MOVS    R3,#TRUE                ;Move 0 to R3 using MOVS instead of LDR (No need for LDR)
             CMP     R3,R2                   ;Compare to TRUE
 			BEQ		setFalse                ;If TRUE, set to false
-            
+
             ;following code block toggle true or false, then checks if other interrupts
 setTrue		MOVS	R2,#TRUE
 			STRB	R2,[R1,#0]
@@ -378,7 +378,7 @@ setFalse	MOVS	R2,#FALSE
 			;Read ISF and Decode Turn signal out via Hardware decoder
 			;(use other port A pins for this function to reduce power use)
 checkSignal	;ISF already loaded
-                                                                        			LDR		R1,[R0,#0]              ;Load ISF data
+            LDR		R1,[R0,#0]              ;Load ISF data
 			LDR		R2,=PTA_PCR4_INT_MASK   ;Now load PCR4 interrupt mask
 			ANDS	R2,R1,R2                ;And them together
 			CMP 	R2,R1
@@ -390,24 +390,24 @@ checkSignal	;ISF already loaded
 
 			;For TurnLeft/Right, PDOR is written with the bit that enables the
 			;Pin identified by the PINX_OUT mask.
-			
+
 TurnRight	LDR 	R1,=PTA_PDOR
-			MOVS 	R2,#PIN2_OUT
+			MOVS 	R2,#PIN1_OUT   ;Use other mask for inverted output
 			STRB 	R2,[R1,#0]
 			B		checkOn
 
 TurnLeft	LDR		R1,=PTA_PDOR
-			MOVS 	R2,#PIN1_OUT
+			MOVS 	R2,#PIN2_OUT	;Use other mask for inverted output
 			STRB 	R2,[R1,#0]
-            
+
             ;Check if the bike is on. This input is arbitrarily mapped to PTA7
-            
+
 checkOn     LDR     R1,[R0,#0]              ;Load ISF Data
             LDR     R2,=PTA_PCR6_INT_MASK   ;Load the interrupt mask
             ANDS    R2,R2,R1                ;Ands Together
 			CMP		R1,R2
             BNE     clearPTAInt             ;If not equal, clear the interrupts
-            
+
             LDR     R1,=IsOn                ;Load On boolean
             LDRB    R2,[R1,#0]              ;Load value
             MOVS    R3,#FALSE               ;Load FALSE
@@ -421,7 +421,7 @@ setOn		MOVS	R2,#TRUE
 			B		clearPTAInt
 setOff  	MOVS	R2,#FALSE
 			STRB	R2,[R1,#0]
-			
+
             ;Clear the interrupt so that when leaving the ISR, interrupt is not triggered
 clearPTAInt ;Upon interrupt, the bits in the ISF are set to 1, and they are w1c
 			;So loading the register values and writing them back to the register
@@ -435,13 +435,13 @@ clearPTAInt ;Upon interrupt, the bits in the ISF are set to 1, and they are w1c
 			BX		LR
 
 			ALIGN	;Word align
-			
+
 
 			EXPORT initVars
 initVars	;Initializes variables to 0
-			
+
 			PUSH	{R0-R2}
-			
+
 			LDR		R0, =Count
 			MOVS	R1, #0
 			STR		R1,[R0,#0]
@@ -449,7 +449,7 @@ initVars	;Initializes variables to 0
 			STRB	R1,[R0,#0]
 			LDR		R0,=IsOn
 			STRB	R1,[R0,#0]
-			
+
 			POP		{R0-R2}
 			BX		LR
 ;------------------------------------------------------
