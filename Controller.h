@@ -4,7 +4,7 @@
 /*Revision Date: 2/24/2016*/
 
 /*						Variables					*/
-extern volatile char Turning;
+extern volatile char *Turning;
 extern volatile char IsOn;
 
 

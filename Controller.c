@@ -65,19 +65,19 @@ int main(void)
 
   /*Execute while bike is on*/
   /*I have literally zero time to implement alarms, so make inf loop*/
-	while(TRUE == TRUE)
+	while(TRUE != FALSE)
   {
     /*If its the first loop, run the init pattern*/
-    if(FirstLoop == TRUE)
+    if(FirstLoop != FALSE)
     {
       initRunningLights();
       FirstLoop = FALSE;
     }
     /*Execute if turn signal is on*/
-    while(Turning == TRUE)
+    while(Turning != FALSE)
     {
       /*Send the reverse pattern to the strips*/
-      reverseSequentialPattern(LED_STRIP_SIZE,&Turning,0x44);
+      reverseSequentialPattern(LED_STRIP_SIZE,Turning,0x44);
       /*__asm("CPSID    I")*/
       setStrip(LED_STRIP_SIZE,WHITE,0x45);
       /*__asm("CPSIE    I")*/
@@ -85,25 +85,32 @@ int main(void)
 
   }
   /*Reset first loop identifier*/
+	/*
   FirstLoop = TRUE;
-
+	*/
   /*Execute while bike is off*/
-  while (IsOn == FALSE)
+	/*
+  while (IsOn != FALSE)
   {
+	*/
     /*If it's the first loop, turn off the lights, please*/
-    if (FirstLoop == TRUE)
+	/*
+    if (FirstLoop != FALSE)
     {
       turnOffLights();
       FirstLoop = FALSE;
     }
 
-
+	*/
     /*Alarm like stuff to be implemented at a later date*/
     /*No timeframe will be given as I have been very busy*/
-  }
+  //}
 
   /*Reset first loop identifier*/
-  FirstLoop = TRUE;
+  //FirstLoop = TRUE;
+	
+	//Totally forgot I was using the C99 compiler...
 
   }
+
 }

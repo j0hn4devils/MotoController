@@ -24,7 +24,7 @@
 /*Output: LED Strip Colors*/
 /*Problems: Pattern is inefficient, Pattern is not needed for current implementation*/
 
-void sequentialPattern(int NumLED, char *TruthCondition, char Speed)
+void sequentialPattern(int NumLED, volatile char *TruthCondition, char Speed)
 {
 	int c = 0; 				                    /*Loop counter for amber loop*/
 	int loop = 1; 		                    /*Loop counter for main loop*/
@@ -80,7 +80,7 @@ void sequentialPattern(int NumLED, char *TruthCondition, char Speed)
 /*Displays the turning pattern to the LED strip selected by microcontroller; pattern is reverse of the normal sequential one*/
 /*Input: Number of LEDs in strip, Condition for animation to loop until false, speed of transfer*/
 /*Output: LED Strip Colors*/
-void reverseSequentialPattern(int NumLED, char *TruthCondition, char Speed)
+void reverseSequentialPattern(int NumLED, volatile char *TruthCondition, char Speed)
 {
 	int b = 0;                            /*Deficit loop counter*/
 	int c = 0; 				              /*Loop counter for amber loop*/
