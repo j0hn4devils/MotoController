@@ -64,7 +64,8 @@ int main(void)
   {
 
   /*Execute while bike is on*/
-	while(IsOn == TRUE)
+  /*I have literally zero time to implement alarms, so make inf loop*/
+	while(TRUE == TRUE)
   {
     /*If its the first loop, run the init pattern*/
     if(FirstLoop == TRUE)
